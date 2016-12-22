@@ -2,14 +2,16 @@
 aliases:
 - /layout/go-templates/
 - /layouts/go-templates/
+lastmod: 2015-11-30
 date: 2013-07-01
 menu:
   main:
     parent: layout
-next: /templates/functions
+next: /templates/ace
 prev: /templates/overview
 title: Go Template Primer
 weight: 15
+toc: true
 ---
 
 Hugo uses the excellent [Go][] [html/template][gohtmltemplate] library for
@@ -63,9 +65,8 @@ Accessing the Page Parameter "bar"
 ## Variables
 
 Each Go template has a struct (object) made available to it. In Hugo, each
-template is passed either a page or a node struct depending on which type of
-page you are rendering. More details are available on the
-[variables](/layout/variables) page.
+template is passed page struct. More details are available on the
+[variables](/layout/variables/) page.
 
 A variable is accessed by referencing the variable name.
 
@@ -82,7 +83,7 @@ Variables can also be defined and referenced.
 Go template ships with a few functions which provide basic functionality. The Go
 template system also provides a mechanism for applications to extend the
 available functions with their own. [Hugo template
-functions](/layout/functions) provide some additional functionality we believe
+functions](/layout/functions/) provide some additional functionality we believe
 are useful for building websites. Functions are called by using their name
 followed by the required parameters separated by spaces. Template
 functions cannot be added without recompiling Hugo.
@@ -205,14 +206,11 @@ A few simple examples should help convey how to use the pipe.
 
 **Example 1:**
 
-    {{ if eq 1 1 }} Same {{ end }}
+    {{ shuffle (seq 1 5) }}
 
 is the same as
 
-    {{ eq 1 1 | if }} Same {{ end }}
-
-It does look odd to place the `if` at the end, but it does provide a good
-illustration of how to use the pipes.
+    {{ (seq 1 5) | shuffle }}
 
 **Example 2:**
 
@@ -220,15 +218,19 @@ illustration of how to use the pipes.
 
 Access the page parameter called "disqus_url" and escape the HTML.
 
+The `index` function is a [Go][] built-in, and you can read about it [here][gostdlibpkgtexttemplate]. `index`:
+
+> ...returns the result of indexing its first argument by the following arguments. Thus "index x 1 2 3" is, in Go syntax, `x[1][2][3]`. Each indexed item must be a map, slice, or array.
+
 **Example 3:**
 
-    {{ if or (or (isset .Params "title") (isset .Params "caption")) (isset .Params "attr")}}
+    {{ if or (or (isset .Params "title") (isset .Params "caption")) (isset .Params "attr") }}
     Stuff Here
     {{ end }}
 
 Could be rewritten as
 
-    {{  isset .Params "caption" | or isset .Params "title" | or isset .Params "attr" | if }}
+    {{ if isset .Params "caption" | or isset .Params "title" | or isset .Params "attr" }}
     Stuff Here
     {{ end }}
 
@@ -236,14 +238,14 @@ Could be rewritten as
 
 By default, Go Templates remove HTML comments from output. This has the unfortunate side effect of removing Internet Explorer conditional comments. As a workaround, use something like this:
 
-    {{ "<!--[if lt IE 9]>" | safeHtml }}
+    {{ "<!--[if lt IE 9]>" | safeHTML }}
       <script src="html5shiv.js"></script>
-    {{ "<![endif]-->" | safeHtml }}
+    {{ "<![endif]-->" | safeHTML }}
 
 Alternatively, use the backtick (`` ` ``) to quote the IE conditional comments, avoiding the tedious task of escaping every double quotes (`"`) inside, as demonstrated in the [examples](http://golang.org/pkg/text/template/#hdr-Examples) in the Go text/template documentation, e.g.:
 
 ```
-{{ `<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"><![endif]-->` | safeHtml }}
+{{ `<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"><![endif]-->` | safeHTML }}
 ```
 
 ## Context (a.k.a. the dot)
@@ -261,7 +263,7 @@ access this from within the loop, you will likely want to do one of the followin
         {{ $title := .Site.Title }}
         {{ range .Params.tags }}
           <li>
-            <a href="{{ $baseurl }}/tags/{{ . | urlize }}">{{ . }}</a>
+            <a href="{{ $baseURL }}/tags/{{ . | urlize }}">{{ . }}</a>
             - {{ $title }}
           </li>
         {{ end }}
@@ -275,7 +277,7 @@ access this from within the loop, you will likely want to do one of the followin
 
         {{ range .Params.tags }}
           <li>
-            <a href="{{ $baseurl }}/tags/{{ . | urlize }}">{{ . }}</a>
+            <a href="{{ $baseURL }}/tags/{{ . | urlize }}">{{ . }}</a>
             - {{ $.Site.Title }}
           </li>
         {{ end }}
@@ -291,6 +293,38 @@ access this from within the loop, you will likely want to do one of the followin
     > You may, of course, recover from this mischief by using `{{ $ := . }}`
     > in a global context to reset `$` to its default value.
 
+## Whitespace
+
+Go 1.6 includes the ability to trim the whitespace from either side of a Go tag by including a hyphen (`-`) and space immediately beside the corresponding `{{` or `}}` delimiter.
+
+For instance, the following Go template:
+
+```html
+<div>
+  {{ .Title }}
+</div>
+```
+
+will include the newlines and horizontal tab in its HTML output:
+
+```html
+<div>
+  Hello, World!
+</div>
+```
+
+whereas using
+
+```html
+<div>
+  {{- .Title -}}
+</div>
+```
+
+in that case will output simply `<div>Hello, World!</div>`.
+
+Go considers the following characters as whitespace: space, horizontal tab, carriage return and newline.
+
 # Hugo Parameters
 
 Hugo provides the option of passing values to the template language
@@ -303,7 +337,7 @@ you want to inside of your templates.
 ## Using Content (page) Parameters
 
 In each piece of content, you can provide variables to be used by the
-templates. This happens in the [front matter](/content/front-matter).
+templates. This happens in the [front matter](/content/front-matter/).
 
 An example of this is used in this documentation site. Most of the pages
 benefit from having the table of contents provided. Sometimes the TOC just
@@ -315,6 +349,7 @@ Here is the example front matter:
 ```
 ---
 title: "Permalinks"
+lastmod: 2015-11-30
 date: "2013-11-18"
 aliases:
   - "/doc/permalinks/"
@@ -355,7 +390,7 @@ January 1st, instead of hunting through your templates.
 
 ```
 {{if .Site.Params.CopyrightHTML}}<footer>
-<div class="text-center">{{.Site.Params.CopyrightHTML | safeHtml}}</div>
+<div class="text-center">{{.Site.Params.CopyrightHTML | safeHTML}}</div>
 </footer>{{end}}
 ```
 
@@ -377,20 +412,16 @@ so, such as in this example:
 ```
 <nav class="recent">
   <h1>Recent Posts</h1>
-  <ul>{{range first .Site.Params.SidebarRecentLimit .Site.Recent}}
+  <ul>{{range first .Site.Params.SidebarRecentLimit .Site.Pages}}
     <li><a href="{{.RelPermalink}}">{{.Title}}</a></li>
   {{end}}</ul>
 </nav>
 ```
 
-
-[go]: http://golang.org/
-[gohtmltemplate]: http://golang.org/pkg/html/template/
-
 # Template example: Show only upcoming events
 
 Go allows you to do more than what's shown here.  Using Hugo's
-[`where`](/templates/functions/#toc_4) function and Go built-ins, we can list
+[`where`](/templates/functions/#where) function and Go built-ins, we can list
 only the items from `content/events/` whose date (set in the front matter) is in
 the future:
 
@@ -406,3 +437,7 @@ the future:
         </li>
       {{ end }}
     {{ end }}
+
+[go]: http://golang.org/
+[gohtmltemplate]: http://golang.org/pkg/html/template/
+[gostdlibpkgtexttemplate]: http://golang.org/pkg/text/template/

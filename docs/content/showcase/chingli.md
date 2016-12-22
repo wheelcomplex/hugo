@@ -1,14 +1,12 @@
 ---
+lastmod: 2015-12-19
 date: 2014-08-26T11:20:02-04:00
-description: ""
-license: ""
-licenseLink: ""
+description: "chingli’s personal blog"
 sitelink: http://www.chingli.com/
-sourceLink: ""
 tags:
 - personal
 - blog
 thumbnail: /img/chingli-tn.jpg
-title: chingli
+title: <span lang="zh-CN">青砾</span> (chingli)
 ---
 

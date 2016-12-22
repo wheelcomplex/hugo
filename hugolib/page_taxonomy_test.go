@@ -1,3 +1,16 @@
+// Copyright 2015 The Hugo Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package hugolib
 
 import (
@@ -5,13 +18,13 @@ import (
 	"testing"
 )
 
-var PAGE_YAML_WITH_TAXONOMIES_A = `---
+var pageYamlWithTaxonomiesA = `---
 tags: ['a', 'B', 'c']
 categories: 'd'
 ---
 YAML frontmatter with tags and categories taxonomy.`
 
-var PAGE_YAML_WITH_TAXONOMIES_B = `---
+var pageYamlWithTaxonomiesB = `---
 tags:
  - "a"
  - "B"
@@ -20,13 +33,13 @@ categories: 'd'
 ---
 YAML frontmatter with tags and categories taxonomy.`
 
-var PAGE_YAML_WITH_TAXONOMIES_C = `---
+var pageYamlWithTaxonomiesC = `---
 tags: 'E'
 categories: 'd'
 ---
 YAML frontmatter with tags and categories taxonomy.`
 
-var PAGE_JSON_WITH_TAXONOMIES = `{
+var pageJSONWithTaxonomies = `{
   "categories": "D",
   "tags": [
     "a",
@@ -36,22 +49,22 @@ var PAGE_JSON_WITH_TAXONOMIES = `{
 }
 JSON Front Matter with tags and categories`
 
-var PAGE_TOML_WITH_TAXONOMIES = `+++
+var pageTomlWithTaxonomies = `+++
 tags = [ "a", "B", "c" ]
 categories = "d"
 +++
 TOML Front Matter with tags and categories`
 
 func TestParseTaxonomies(t *testing.T) {
-	for _, test := range []string{PAGE_TOML_WITH_TAXONOMIES,
-		PAGE_JSON_WITH_TAXONOMIES,
-		PAGE_YAML_WITH_TAXONOMIES_A,
-		PAGE_YAML_WITH_TAXONOMIES_B,
-		PAGE_YAML_WITH_TAXONOMIES_C,
+	for _, test := range []string{pageTomlWithTaxonomies,
+		pageJSONWithTaxonomies,
+		pageYamlWithTaxonomiesA,
+		pageYamlWithTaxonomiesB,
+		pageYamlWithTaxonomiesC,
 	} {
 
 		p, _ := NewPage("page/with/taxonomy")
-		err := p.ReadFrom(strings.NewReader(test))
+		_, err := p.ReadFrom(strings.NewReader(test))
 		if err != nil {
 			t.Fatalf("Failed parsing %q: %s", test, err)
 		}

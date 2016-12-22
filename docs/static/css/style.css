@@ -1,5 +1,5 @@
 /* Import fonts */
-@import url(http://fonts.googleapis.com/css?family=Lato:300,400,700,900,300italic,400italic,700italic,900italic);
+@import url(//fonts.googleapis.com/css?family=Lato:300,400,700,900,300italic,400italic,700italic,900italic);
 
 /* ******************************
  For the github btn
@@ -91,8 +91,8 @@ h1, h2, h3 {
 }
 
 pre code {
-    font-size: 18px !important;
-    font-family: 'Courier New', monospace;
+    font-size: 15px !important;
+    font-family: Menlo, Consolas, 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Lucida Console', Monaco, 'Droid Sans Mono', monospace;
 }
 
 body {
@@ -101,16 +101,25 @@ body {
     font-family: 'Lato', sans-serif;
     padding: 0px !important;
     margin: 0px !important;
-    font-size:16px !important;    
-    font-weight: 300;
-}
-
-h1,h2,h3,h4,h5{
+    font-size: 16px !important;
     font-weight: 400;
 }
 
+h2,h3,h4,h5{
+    font-weight: 700;
+}
+
+
+h1[id]:before, h2[id]:before, h3[id]:before, h4[id]:before, h5[id]:before {
+    display: block;
+    content: " ";
+    margin-top: -75px;
+    height: 75px;
+    visibility: hidden;
+}
+
 label{
-    font-weight: 300;
+    font-weight: 400;
 }
 
 .sidebar-menu .fa {
@@ -124,6 +133,10 @@ a, a:hover, a:focus {
     outline: 0;
 }
 
+img {
+    max-width: 100%;
+    height: auto;
+}
 
 .panel-body a {
     line-height: 1.1;
@@ -211,7 +224,7 @@ ul.sidebar-menu li ul.sub li a {
     -o-transition: all 0.3s ease;
     -ms-transition: all 0.3s ease;
     transition: all 0.3s ease;
-    color: #737B83;
+    color: #656C73;
     font-size: 14px;
 }
 
@@ -239,12 +252,12 @@ ul.sidebar-menu li a span{
 }
 
 ul.sidebar-menu li a{
-    color: #8b9199;
+    color: #72767D;
     text-decoration: none;
     display: block;
     padding: 10px 0 10px 10px;
     font-size: 16px;
-    font-weight: 300;
+    font-weight: 400;
     outline: none;
     -webkit-transition: all 0.3s ease;
     -moz-transition: all 0.3s ease;
@@ -266,13 +279,13 @@ ul.sidebar-menu li.active a, ul.sidebar-menu li a:hover, ul.sidebar-menu li a:fo
     -moz-transition: all 0.3s ease;
     -o-transition: all 0.3s ease;
     -ms-transition: all 0.3s ease;
-    transition: all 0.3s ease;        
+    transition: all 0.3s ease;
 }
 ul.sidebar-menu li a:hover, ul.sidebar-menu li a:focus {
     border-bottom: 1px solid #ff4088;
 }
 /*ul.sidebar-menu li.active a,*/ ul.sidebar-menu .sub-menu li.active a{
-    border-bottom: 1px solid #ff4088;   
+    border-bottom: 1px solid #ff4088;
 }
 
 ul.sidebar-menu li a i {
@@ -290,16 +303,24 @@ ul.sidebar-menu li.active a i {
 }
 
 
-#sidebar ul > li > a .menu-arrow { 
-    float: right;    
+#sidebar ul > li > a .menu-arrow {
+    float: right;
     margin-right: 8px;
-    margin-top: 6px;    
+    margin-top: 6px;
+}
+
+@-moz-document url-prefix() {
+  #sidebar ul > li > a .menu-arrow {
+      float: right;
+      margin-right: 8px;
+      margin-top: -16px;
+  }
 }
 
 #main-content {
     margin-left: 200px;
     line-height: 1.8;
-    font-size: 19px;
+    font-size: 18px;
 }
 
 .header {
@@ -329,7 +350,7 @@ ul.sidebar-menu li.active a i {
 
 a.logo {
     font-size: 22px;
-    font-weight: 300;
+    font-weight: 400;
     color: #8E8E93;
     float: left;
     margin-top: 10px;
@@ -477,30 +498,6 @@ kbd {
   font-size: 0.85em;
 }
 
-/* For the table used in overview/configuration */
-
-table.table {
-  margin: 1em 0;
-}
-
-.table-bordered th,
-.table-bordered td {
-  border: 2px solid #ddd;
-  padding: 0 0.5em;
-}
-
-td.purpose-title {
-  text-align: right;
-  vertical-align: top;
-  border-right: 0;
-  padding-right: 0.5em;
-  font-weight: bold;
-}
-
-td.purpose-description {
-  border-left: 0;
-}
-
 /* For definitions of variables */
 
 dl {
@@ -541,7 +538,7 @@ i.freebsd-19px:before {
     overflow: hidden;
     margin: 20px 0;
 }
- 
+
 .video-container iframe,
 .video-container object,
 .video-container embed {
@@ -549,5 +546,139 @@ i.freebsd-19px:before {
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;    
+    height: 100%;
+}
+
+/* Google custom search */
+.cse {
+    margin-top: 20px;
+    padding-right: 20px;
+}
+
+
+/* Table of contents */
+
+.toc ul { list-style: none; margin: 0; padding: 0 5px;  }
+.toc ul li { display: inline; }
+#TableOfContents > ul > li > ul > li > ul li { margin-right: 8px; }
+#TableOfContents > ul > li > ul > li > a, #TableOfContents > ul > li > a   { font-weight: bold; background-color: #eeeeee; padding: 0 10px; margin: 0 2px; }
+#TableOfContents > ul > li > ul > li > a { font-style: italic; }
+.toc.compact ul > li > ul > li > ul  { display: none; }
+
+#toc {
+    position:fixed;
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 10px 50px 10px 20px;
+}
+
+.showcase-container {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+}
+
+.showcase-container img {
+  border: 1px solid #555;
+}
+
+.showcase-container h4 {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+.dummy {
+    padding-top: 90%; /* Making rows line up even if img proportions off */
+}
+
+.thumbnail {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+@media(max-width:1200px) {
+    .toc {
+        display: none;
+    }
+}
+
+
+/* Footer panel */
+.footer-panel {
+    width: 100%;
+    border-top:1px #efefef solid;
+    line-height: 30px;
+    padding: 25px 0px 15px;
+    margin-top: 15px;
+    background: #f9f9f9;
+    display: inline-block;
+    float: left;
+}
+
+.footer-panel p {
+    padding-left: 20px;
+    padding-right: 20px;
+    font-size: medium;
+    font-style: italic;
+}
+
+
+/* Search form */
+#search-input {
+    width: 100%;
+    border: 1px solid #B3B3B3;
+    border-radius: 3px;
+    padding: 5px;
+}
+
+#search-input:focus {
+    border-color: #F04A9C;
+}
+
+/* Search result wrapper */
+.algolia-autocomplete {
+    width: 100%;
+}
+
+/* List of search results */
+.aa-dropdown-menu {
+    box-sizing: border-box;
+    width: 100%;
+    background-color: #FFFFFF;
+    border: 1px solid #B3B3B3;
+    padding: 0;
+    font-size: 16px;
+    margin: 4 0 4 0;
+}
+
+/* Highlight terms in search result headers */
+.algolia-docsearch-suggestion--category-header .algolia-docsearch-suggestion--highlight {
+    background-color: #F04A9C;
+}
+
+/* Highlight terms in search result body */
+.algolia-docsearch-suggestion--highlight {
+    color: #F04A9C;
+    font-weight: 900;
+}
+
+/* Currently selected search result */
+.aa-cursor .algolia-docsearch-suggestion--content {
+    color: inherit;
+}
+
+.aa-cursor .algolia-docsearch-suggestion {
+    background: #EFEFEF;
+    color: #353B44;
+}
+
+.algolia-docsearch-suggestion {
+    font-size: 16px;
+    color: #9AA2AB;
+}
+
+.algolia-docsearch-suggestion--category-header,
+.algolia-docsearch-suggestion--subcategory-column {
+    display: none !important;
 }

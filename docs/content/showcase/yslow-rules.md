@@ -1,4 +1,5 @@
 ---
+lastmod: 2015-08-08
 date: 2014-04-07T10:45:00Z
 description: Community project of YSlow rules translations
 license: MIT License
@@ -9,7 +10,7 @@ tags:
 - community
 - documentation
 - translation
-thumbnail: /img/yslow-rules.jpg
+thumbnail: /img/yslow-rules-tn.png
 title: YSlow Rules
 ---
 

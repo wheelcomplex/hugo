@@ -1,24 +1,27 @@
 ---
+lastmod: 2015-12-23
 date: 2014-11-25
 menu:
   main:
     parent: extras
-next: /extras/livereload
+next: /extras/robots-txt
 prev: /extras/comments
 title: Cross-References
-weight: 40
+toc: true
 ---
 
 Hugo makes it easy to link documents together with the `ref` and `relref` shortcodes. These shortcodes are also used to safely provide links to headings inside of your content, whether across documents or within a document. The only difference between `ref` and `relref` is whether the resulting URL is absolute (`http://1.com/about/`) or relative (`/about/`).
 
 ## Using `ref` and `relref`
 
-    {{</* ref "document" */>}}
-    {{</* ref "#anchor" */>}}
-    {{</* ref "document#anchor" */>}}
-    {{</* relref "document" */>}}
-    {{</* relref "#anchor" */>}}
-    {{</* relref "document#anchor" */>}}
+```django
+{{</* ref "document" */>}}
+{{</* ref "#anchor" */>}}
+{{</* ref "document#anchor" */>}}
+{{</* relref "document" */>}}
+{{</* relref "#anchor" */>}}
+{{</* relref "document#anchor" */>}}
+```
 
 The single parameter to `ref` is a string with a content _document name_ (`about.md`), an in-document _anchor_ (`#who`), or both (`about.md#who`).
 

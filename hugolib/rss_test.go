@@ -1,69 +1,46 @@
+// Copyright 2016 The Hugo Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package hugolib
 
 import (
-	"bytes"
+	"path/filepath"
 	"testing"
 
-	"github.com/spf13/afero"
-	"github.com/spf13/hugo/helpers"
-	"github.com/spf13/hugo/hugofs"
-	"github.com/spf13/hugo/source"
 	"github.com/spf13/viper"
 )
 
-const RSS_TEMPLATE = `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>{{ .Title }} on {{ .Site.Title }} </title>
-    <link>{{ .Permalink }}</link>
-    <language>en-us</language>
-    <author>Steve Francia</author>
-    <rights>Francia; all rights reserved.</rights>
-    <updated>{{ .Date }}</updated>
-    {{ range .Data.Pages }}
-    <item>
-      <title>{{ .Title }}</title>
-      <link>{{ .Permalink }}</link>
-      <pubDate>{{ .Date.Format "Mon, 02 Jan 2006 15:04:05 MST" }}</pubDate>
-      <author>Steve Francia</author>
-      <guid>{{ .Permalink }}</guid>
-      <description>{{ .Content | html }}</description>
-    </item>
-    {{ end }}
-  </channel>
-</rss>`
-
 func TestRSSOutput(t *testing.T) {
-	viper.Set("baseurl", "http://auth/bub/")
+	testCommonResetState()
 
-	hugofs.DestinationFS = new(afero.MemMapFs)
-	s := &Site{
-		Source: &source.InMemorySource{ByteSource: WEIGHTED_SOURCES},
-	}
-	s.initializeSiteInfo()
-	s.prepTemplates()
-	//  Add an rss.xml template to invoke the rss build.
-	s.addTemplate("rss.xml", RSS_TEMPLATE)
+	rssURI := "customrss.xml"
+	viper.Set("baseURL", "http://auth/bub/")
+	viper.Set("rssURI", rssURI)
+	viper.Set("title", "RSSTest")
 
-	if err := s.CreatePages(); err != nil {
-		t.Fatalf("Unable to create pages: %s", err)
+	for _, s := range weightedSources {
+		writeSource(t, filepath.Join("content", "sect", s.Name), string(s.Content))
 	}
 
-	if err := s.BuildSiteMeta(); err != nil {
-		t.Fatalf("Unable to build site metadata: %s", err)
+	if err := buildAndRenderSite(newSiteDefaultLang()); err != nil {
+		t.Fatalf("Failed to build site: %s", err)
 	}
 
-	if err := s.RenderHomePage(); err != nil {
-		t.Fatalf("Unable to RenderHomePage: %s", err)
-	}
+	// Home RSS
+	assertFileContent(t, filepath.Join("public", rssURI), true, "<?xml", "rss version", "RSSTest")
+	// Section RSS
+	assertFileContent(t, filepath.Join("public", "sect", rssURI), true, "<?xml", "rss version", "Sects on RSSTest")
+	// Taxonomy RSS
+	assertFileContent(t, filepath.Join("public", "categories", "hugo", rssURI), true, "<?xml", "rss version", "Hugo on RSSTest")
 
-	file, err := hugofs.DestinationFS.Open("index.xml")
-
-	if err != nil {
-		t.Fatalf("Unable to locate: %s", "index.xml")
-	}
-
-	rss := helpers.ReaderToBytes(file)
-	if !bytes.HasPrefix(rss, []byte("<?xml")) {
-		t.Errorf("rss feed should start with <?xml. %s", rss)
-	}
 }

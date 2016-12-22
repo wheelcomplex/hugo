@@ -1,6 +1,7 @@
 ---
 aliases:
 - /layout/homepage/
+lastmod: 2015-08-04
 date: 2013-07-01
 menu:
   main:
@@ -13,9 +14,9 @@ weight: 50
 ---
 
 The home page of a website is often formatted differently than the other
-pages. In Hugo you can define your own homepage template. 
+pages. In Hugo you can define your own homepage template.
 
-Homepage is of the type "node" and have all the [node
+Homepage is a `Page` and have all the [page
 variables](/templates/variables/) and [site
 variables](/templates/variables/) available to use in the templates.
 
@@ -23,9 +24,11 @@ variables](/templates/variables/) available to use in the templates.
 bootstrapping a new site and template. It is also the only required
 template when using a single page site.*
 
-In addition to the standard node variables, the homepage has access to
+In addition to the standard page variables, the homepage has access to
 all site content accessible from `.Data.Pages`. Details on how to use the
 list of pages can be found in the [Lists Template](/templates/list/).
+
+Note that a home page can also have a content file with frontmatter,  see [Source Organization]({{< relref "overview/source-directory.md#content-for-home-page-and-other-list-pages" >}}).
 
 ## Which Template will be rendered?
 Hugo uses a set of rules to figure out which template to use when
@@ -45,9 +48,9 @@ the list will be needed.
 * /themes/`THEME`/layouts/\_default/single.html
 
 ## Example index.html
-This content template is used for [spf13.com](http://spf13.com).
+This content template is used for [spf13.com](http://spf13.com/).
 
-It makes use of [partial templates](/templates/partials) and uses a similar approach as a [List](/templates/list/).
+It makes use of [partial templates](/templates/partials/) and uses a similar approach as a [List](/templates/list/).
 
     <!DOCTYPE html>
     <html class="no-js" lang="en-US" prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#">
@@ -56,10 +59,10 @@ It makes use of [partial templates](/templates/partials) and uses a similar appr
 
         {{ partial "meta.html" . }}
 
-        <base href="{{ .Site.BaseUrl }}">
+        <base href="{{ .Site.BaseURL }}">
         <title>{{ .Site.Title }}</title>
         <link rel="canonical" href="{{ .Permalink }}">
-        <link href="{{ .RSSlink }}" rel="alternate" type="application/rss+xml" title="{{ .Site.Title }}" />
+        <link href="{{ .RSSLink }}" rel="alternate" type="application/rss+xml" title="{{ .Site.Title }}" />
 
         {{ partial "head_includes.html" . }}
     </head>
@@ -75,4 +78,4 @@ It makes use of [partial templates](/templates/partials) and uses a similar appr
       </div>
     </section>
 
-    {{ partial "footer.html" }}
+    {{ partial "footer.html" . }}

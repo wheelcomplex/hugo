@@ -1,6 +1,8 @@
 ---
+lastmod: 2015-12-23
 date: 2014-05-26
 linktitle: Usage
+toc: true
 menu:
   main:
     parent: taxonomy
@@ -16,18 +18,33 @@ Taxonomies must be defined in the site configuration before they can be
 used throughout the site. You need to provide both the plural and
 singular labels for each taxonomy.
 
-Here is an example configuration in YAML that specifies three taxonomies
-(the default two, plus `series`).
+Here is an example configuration in TOML and YAML
+that specifies three taxonomies (the default two, plus `series`).
 
-Notice the format is **singular key** : *plural value*. 
-### config.yaml
+Notice the format is <code><strong>singular key</strong> = &quot;<em>plural value</em>&quot;</code> for TOML,
+or <code><strong>singular key</strong>: &quot;<em>plural value</em>&quot;</code> for YAML:
 
-    ---
-    Taxonomies:
-        tag: "tags"
-        category: "categories"
-        series: "series"
-    ---
+<table class="table">
+<thead>
+<tr>
+<th>config.toml excerpt:</th><th>config.yaml excerpt:</th>
+</tr>
+</thead>
+<tbody>
+<tr valign="top">
+<td><pre><code class="language-toml">[taxonomies]
+tag = "tags"
+category = "categories"
+series = "series"
+</code></pre></td>
+<td><pre><code class="language-yaml">taxonomies:
+  tag: "tags"
+  category: "categories"
+  series: "series"
+</code></pre></td>
+</tr>
+</tbody>
+</table>
 
 ## Assigning taxonomy values to content
 
@@ -38,35 +55,55 @@ Assigning content to an taxonomy is done in the front matter.
 Simply create a variable with the *plural* name of the taxonomy
 and assign all terms you want to apply to this content.
 
-**taxonomy values are case insensitive**
+## Preserving taxonomy values
 
-### Front Matter Example (in TOML)
+By default, taxonomy names are hyphenated, lower-cased and normalized, and then
+fixed and titleized on the archive page.
 
-    +++
-    title = "Hugo: A fast and flexible static site generator"
-    tags = [ "Development", "Go", "fast", "Blogging" ]
-    categories = [ "Development" ]
-    series = [ "Go Web Dev" ]
-    slug = "hugo"
-    project_url = "http://github.com/spf13/hugo"
-    +++
+However, if you want to have a taxonomy value with special characters
+such as `Gérard Depardieu` instead of `Gerard Depardieu`,
+you need to set the `preserveTaxonomyNames` [site configuration](/overview/configuration/) variable to `true`.
+Hugo will then preserve special characters in taxonomy values
+but will still titleize the values for titles and normalize them in URLs.
 
-### Front Matter Example (in JSON)
+Note that if you use `preserveTaxonomyNames` and intend to manually construct URLs to the archive pages,
+you will need to pass the taxonomy values through the `urlize` template function.
 
-    {
-        "title": "Hugo: A fast and flexible static site generator",
-        "tags": [
-            "Development",
-            "Go",
-            "fast",
-            "Blogging"
-        ],
-        "categories" : [
-            "Development"
-        ],
-        "series" : [
-            "Go Web Dev"
-        ],
-        "slug": "hugo",
-        "project_url": "http://github.com/spf13/hugo"
-    }
+## Front Matter Example (in TOML)
+
+```toml
++++
+title = "Hugo: A fast and flexible static site generator"
+tags = [ "Development", "Go", "fast", "Blogging" ]
+categories = [ "Development" ]
+series = [ "Go Web Dev" ]
+slug = "hugo"
+project_url = "https://github.com/spf13/hugo"
++++
+```
+
+## Front Matter Example (in JSON)
+
+```json
+{
+    "title": "Hugo: A fast and flexible static site generator",
+    "tags": [
+        "Development",
+        "Go",
+        "fast",
+        "Blogging"
+    ],
+    "categories" : [
+        "Development"
+    ],
+    "series" : [
+        "Go Web Dev"
+    ],
+    "slug": "hugo",
+    "project_url": "https://github.com/spf13/hugo"
+}
+```
+
+## Add content file with frontmatter
+
+See [Source Organization]({{< relref "overview/source-directory.md#content-for-home-page-and-other-list-pages" >}}).

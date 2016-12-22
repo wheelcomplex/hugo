@@ -1,18 +1,49 @@
+// Copyright 2015 The Hugo Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package hugolib
 
 import (
-	"strings"
+	"path/filepath"
 	"testing"
+
+	"github.com/spf13/viper"
 )
 
-func TestSitePossibleTaxonomies(t *testing.T) {
-	site := new(Site)
-	page, _ := NewPageFrom(strings.NewReader(PAGE_YAML_WITH_TAXONOMIES_A), "path/to/page")
-	site.Pages = append(site.Pages, page)
-	taxonomies := site.possibleTaxonomies()
-	if !compareStringSlice(taxonomies, []string{"tags", "categories"}) {
-		if !compareStringSlice(taxonomies, []string{"categories", "tags"}) {
-			t.Fatalf("possible taxonomies do not match [tags categories].  Got: %s", taxonomies)
-		}
+func TestByCountOrderOfTaxonomies(t *testing.T) {
+	defer testCommonResetState()
+
+	taxonomies := make(map[string]string)
+
+	taxonomies["tag"] = "tags"
+	taxonomies["category"] = "categories"
+
+	viper.Set("taxonomies", taxonomies)
+
+	writeSource(t, filepath.Join("content", "page.md"), pageYamlWithTaxonomiesA)
+
+	site := newSiteDefaultLang()
+
+	if err := buildSiteSkipRender(site); err != nil {
+		t.Fatalf("Failed to build site: %s", err)
+	}
+
+	st := make([]string, 0)
+	for _, t := range site.Taxonomies["tags"].ByCount() {
+		st = append(st, t.Name)
+	}
+
+	if !compareStringSlice(st, []string{"a", "b", "c"}) {
+		t.Fatalf("ordered taxonomies do not match [a, b, c].  Got: %s", st)
 	}
 }

@@ -1,9 +1,9 @@
-// Copyright © 2014 Steve Francia <spf@spf13.com>.
+// Copyright 2015 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,8 @@ package hugolib
 
 import (
 	"errors"
+
+	"fmt"
 
 	"github.com/spf13/hugo/source"
 )
@@ -66,15 +68,24 @@ func (mh *MetaHandle) Convert(i interface{}, s *Site, results HandleResults) {
 			results <- HandledResult{err: errors.New("file resulted in a nil page")}
 			return
 		}
-		results <- h.PageConvert(p, s.Tmpl)
-		p.setSummary()
-		p.analyzePage()
+
+		if h == nil {
+			results <- HandledResult{err: fmt.Errorf("No handler found for page '%s'. Verify the markup is supported by Hugo.", p.FullFilePath())}
+			return
+		}
+
+		results <- h.PageConvert(p, s.owner.tmpl)
 	}
 }
 
 func (mh *MetaHandle) Handler() Handler {
 	if mh.handler == nil {
 		mh.handler = FindHandler(mh.ext)
+
+		// if no handler found, use default handler
+		if mh.handler == nil {
+			mh.handler = FindHandler("*")
+		}
 	}
 	return mh.handler
 }

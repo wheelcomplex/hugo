@@ -1,9 +1,9 @@
-// Copyright © 2014 Steve Francia <spf@spf13.com>.
+// Copyright 2015 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,8 +33,7 @@ func (c *connection) reader() {
 		if err != nil {
 			break
 		}
-		switch true {
-		case bytes.Contains(message, []byte(`"command":"hello"`)):
+		if bytes.Contains(message, []byte(`"command":"hello"`)) {
 			c.send <- []byte(`{
 				"command": "hello",
 				"protocols": [ "http://livereload.com/protocols/official-7" ],

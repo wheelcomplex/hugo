@@ -1,130 +1,108 @@
-# Hugo
-A Fast and Flexible Static Site Generator built with love by [spf13](http://spf13.com)
-and [friends](http://github.com/spf13/hugo/graphs/contributors) in Go.
+![Hugo](https://raw.githubusercontent.com/spf13/hugo/master/docs/static/img/hugo-logo.png)
 
-[![Build Status](https://travis-ci.org/spf13/hugo.png)](https://travis-ci.org/spf13/hugo)
-[![wercker status](https://app.wercker.com/status/1a0de7d703ce3b80527f00f675e1eb32 "wercker status")](https://app.wercker.com/project/bykey/1a0de7d703ce3b80527f00f675e1eb32)
-[![Build status](https://ci.appveyor.com/api/projects/status/n2mo912b8s2505e8/branch/master?svg=true)](https://ci.appveyor.com/project/spf13/hugo/branch/master)
+A Fast and Flexible Static Site Generator built with love by [spf13](http://spf13.com/) and [friends](https://github.com/spf13/hugo/graphs/contributors) in [Go][].
+
+[Website](https://gohugo.io) |
+[Forum](https://discuss.gohugo.io) |
+[Developer Chat (no support)](https://gitter.im/spf13/hugo) |
+[Documentation](https://gohugo.io/overview/introduction/) |
+[Installation Guide](https://gohugo.io/overview/installing/) |
+[Contribution Guide](CONTRIBUTING.md) |
+[Twitter](http://twitter.com/spf13)
+
+[![GoDoc](https://godoc.org/github.com/spf13/hugo?status.svg)](https://godoc.org/github.com/spf13/hugo)
+[![Linux and OS X Build Status](https://api.travis-ci.org/spf13/hugo.svg?branch=master&label=Linux+and+OS+X+build "Linux and OS X Build Status")](https://travis-ci.org/spf13/hugo)
+[![Windows Build Status](https://ci.appveyor.com/api/projects/status/n2mo912b8s2505e8/branch/master?svg=true&label=Windows+build "Windows Build Status")](https://ci.appveyor.com/project/spf13/hugo/branch/master)
+[![Dev chat at https://gitter.im/spf13/hugo](https://img.shields.io/badge/gitter-developer_chat-46bc99.svg)](https://gitter.im/spf13/hugo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Go Report Card](https://goreportcard.com/badge/github.com/spf13/hugo)](https://goreportcard.com/report/github.com/spf13/hugo)
 
 ## Overview
 
-Hugo is a static site generator written in Go. It is optimized for
-speed, easy use and configurability. Hugo takes a directory with content and
-templates and renders them into a full HTML website.
+Hugo is a static HTML and CSS website generator written in [Go][].
+It is optimized for speed, easy use and configurability.
+Hugo takes a directory with content and templates and renders them into a full HTML website.
 
-Hugo makes use of Markdown files with front matter for meta data.
+Hugo relies on Markdown files with front matter for meta data.
+And you can run Hugo from any directory.
+This works well for shared hosts and other systems where you don’t have a privileged account.
 
-A typical website of moderate size can be
-rendered in a fraction of a second. A good rule of thumb is that Hugo
-takes around 1 millisecond for each piece of content.
+Hugo renders a typical website of moderate size in a fraction of a second.
+A good rule of thumb is that each piece of content renders in around 1 millisecond.
 
-It is written to work well with any
-kind of website including blogs, tumbles and docs.
+Hugo is designed to work well for any kind of website including blogs, tumbles and docs.
 
-**Complete documentation is available at [Hugo Documentation](http://gohugo.io).**
+#### Supported Architectures
 
-# Getting Started
+Currently, we provide pre-built Hugo binaries for Windows, Linux, FreeBSD, NetBSD and OS&nbsp;X (Darwin) for x64, i386 and ARM architectures.
 
-## Installing Hugo
+Hugo may also be compiled from source wherever the Go compiler tool chain can run, e.g. for other operating systems including DragonFly BSD, OpenBSD, Plan&nbsp;9 and Solaris.
 
-Hugo is written in Go with support for Windows, Linux, FreeBSD and OS X.
+**Complete documentation is available at [Hugo Documentation][].**
 
-The latest release can be found at [Hugo Releases](https://github.com/spf13/hugo/releases).
-We currently build for Windows, Linux, FreeBSD and OS X for x64
-and i386 architectures.
+## Choose How to Install
 
-### Installing Hugo (binary)
+If you want to use Hugo as your site generator, simply install the Hugo binaries.
+The Hugo binaries have no external dependencies.
 
-Installation is very easy. Simply download the appropriate version for your
-platform from [Hugo Releases](https://github.com/spf13/hugo/releases).
-Once downloaded, it can be run from anywhere. You don't need to install
-it into a global location. This works well for shared hosts and other systems
-where you don't have a privileged account.
+To contribute to the Hugo source code or documentation, you should [fork the Hugo GitHub project](https://github.com/spf13/hugo#fork-destination-box) and clone it to your local machine.
 
-Ideally, you should install it somewhere in your path for easy use. `/usr/local/bin`
-is the most probable location.
+Finally, you can install the Hugo source code with `go`, build the binaries yourself, and run Hugo that way.
+Building the binaries is an easy task for an experienced `go` getter.
 
-*The Hugo executable has no external dependencies.*
+### Install Hugo as Your Site Generator (Binary Install)
 
-### Installing from source
+Use the [installation instructions in the Hugo documentation](https://gohugo.io/overview/installing/).
 
-#### Dependencies
+### Build and Install the Binaries from Source (Advanced Install)
 
-* Git
-* Go 1.1+ (Go 1.4+ on Windows, see Go [Issue #8090](https://code.google.com/p/go/issues/detail?id=8090))
-* Mercurial
-* Bazaar
-
-#### Clone locally (for contributors):
-
-    git clone https://github.com/spf13/hugo
-    cd hugo
-    go get
-
-Because Go expects all of your libraries to be found in either `$GOROOT` or `$GOPATH`,
-it's helpful to symlink the project to one of the following paths:
-
- * `ln -s /path/to/your/hugo $GOPATH/src/github.com/spf13/hugo`
- * `ln -s /path/to/your/hugo $GOROOT/src/pkg/github.com/spf13/hugo`
-
-#### Get directly from GitHub:
-
-If you only want to build from source, it's even easier.
+Add Hugo and its package dependencies to your go `src` directory.
 
     go get -v github.com/spf13/hugo
 
-#### Building Hugo
+Once the `get` completes, you should find your new `hugo` (or `hugo.exe`) executable sitting inside `$GOPATH/bin/`.
 
-    cd /path/to/hugo
-    go build -o hugo main.go
-    mv hugo /usr/local/bin/
+To update Hugo’s dependencies, use `go get` with the `-u` option.
 
-##### Adding compile information to Hugo
+    go get -u -v github.com/spf13/hugo
 
-When Hugo is built using the above steps, the `version` sub-command will include the `mdate` of the Hugo executable, similar to the following:
+## Contributing to Hugo
 
-    Hugo Static Site Generator v0.13-DEV buildDate: 2014-12-24T04:46:03-07:00
+For a complete guide to contributing to Hugo, see the [Contribution Guide](CONTRIBUTING.md).
 
-Instead, it is possible to have the `version` sub-command return information about the git commit used and time of compilation using `build` flags.
+We welcome contributions to Hugo of any kind including documentation, themes,
+organization, tutorials, blog posts, bug reports, issues, feature requests,
+feature implementations, pull requests, answering questions on the forum,
+helping to manage issues, etc.
 
-To do this, replace the `go build` command with the following *(replace `/path/to/hugo` with the actual path)*:
+The Hugo community and maintainers are very active and helpful, and the project benefits greatly from this activity.
 
-    go build -ldflags "-X /path/to/hugo/hugolib.CommitHash `git rev-parse --short HEAD 2>/dev/null` -X github.com/spf13/hugo/hugolib.BuildDate `date +%FT%T%z`"
+[![Throughput Graph](https://graphs.waffle.io/spf13/hugo/throughput.svg)](https://waffle.io/spf13/hugo/metrics)
 
-This will result in `hugo version` output that looks similar to:
+### Asking Support Questions
 
-    Hugo Static Site Generator v0.13-DEV-8042E77 buildDate: 2014-12-25T03:25:57-07:00
+We have an active [discussion forum](http://discuss.gohugo.io) where users and developers can ask questions.
+Please don't use the Github issue tracker to ask questions.
 
-The format of the date is configurable via the `Params.DateFormat` setting.  `DateFormat` is a string value representing the Go time layout that should be used to format the date output. If `Params.DateFormat` is not set, `time.RFC3339` will be used as the default format. See Go's ["time" package documentation](http://golang.org/pkg/time/#pkg-constants) for more information.
+### Reporting Issues
 
-Configuration setting using config.yaml as example:
+If you believe you have found a defect in Hugo or its documentation, use
+the Github issue tracker to report the problem to the Hugo maintainers.
+If you're not sure if it's a bug or not, start by asking in the [discussion forum](http://discuss.gohugo.io).
+When reporting the issue, please provide the version of Hugo in use (`hugo version`).
 
-    Params:
-       DateFormat: "2006-01-02"
+### Submitting Patches
 
-Will result in:
+The Hugo project welcomes all contributors and contributions regardless of skill or experience level.
+If you are interested in helping with the project, we will help you with your contribution.
+Hugo is a very active project with many contributions happening daily.
+Because we want to create the best possible product for our users and the best contribution experience for our developers,
+we have a set of guidelines which ensure that all contributions are acceptable.
+The guidelines are not intended as a filter or barrier to participation.
+If you are unfamiliar with the contribution process, the Hugo team will help you and teach you how to bring your contribution in accordance with the guidelines.
 
-    Hugo Static Site Generator v0.13-DEV buildDate: 2014-10-16
-    Hugo Static Site Generator v0.13-DEV-24BBFE7 buildDate: 2014-10-16
-
-#### Running Hugo
-
-    cd /path/to/hugo
-    go install github.com/spf13/hugo/hugolib
-    go run main.go
-
-#### Contribution Guidelines
-
-We welcome your contributions.  To make the process as seamless as possible, we ask for the following:
-
-* Go ahead and fork the project and make your changes.  We encourage pull requests to discuss code changes.
-* When you're ready to create a pull request, be sure to:
-     * Have test cases for the new code.  If you have questions about how to do it, please ask in your pull request.
-     * Run `go fmt`
-     * Squash your commits into a single commit.  `git rebase -i`.  It's okay to force update your pull request.  
-     * Make sure `go test ./...` passes, and `go build` completes.  Our Travis CI loop will catch most things that are missing.  The exception: Windows.  We run on Windows from time to time, but if you have access, please check on a Windows machine too.
-
-**Complete documentation is available at [Hugo Documentation](http://gohugo.io).**
+For a complete guide to contributing code to Hugo, see the [Contribution Guide](CONTRIBUTING.md).
 
 [![Analytics](https://ga-beacon.appspot.com/UA-7131036-6/hugo/readme)](https://github.com/igrigorik/ga-beacon)
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/spf13/hugo/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
+[Go]: https://golang.org/
+[Hugo Documentation]: https://gohugo.io/overview/introduction/

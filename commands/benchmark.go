@@ -1,9 +1,9 @@
-// Copyright © 2013 Steve Francia <spf@spf13.com>.
+// Copyright 2015 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,41 +14,94 @@
 package commands
 
 import (
-	"github.com/spf13/cobra"
 	"os"
+	"runtime"
 	"runtime/pprof"
+	"time"
+
+	"github.com/spf13/cobra"
+	jww "github.com/spf13/jwalterweatherman"
 )
 
-var cpuProfilefile string
-var benchmarkTimes int
+var (
+	benchmarkTimes int
+	cpuProfileFile string
+	memProfileFile string
+)
 
-var benchmark = &cobra.Command{
+var benchmarkCmd = &cobra.Command{
 	Use:   "benchmark",
-	Short: "Benchmark hugo by building a site a number of times",
-	Long: `Hugo can build a site many times over and analyze the
-running process creating a benchmark.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		InitializeConfig()
-		bench(cmd, args)
-	},
+	Short: "Benchmark Hugo by building a site a number of times.",
+	Long: `Hugo can build a site many times over and analyze the running process
+creating a benchmark.`,
 }
 
 func init() {
-	benchmark.Flags().StringVar(&cpuProfilefile, "outputfile", "/tmp/hugo-cpuprofile", "path/filename for the profile file")
-	benchmark.Flags().IntVarP(&benchmarkTimes, "count", "n", 13, "number of times to build the site")
+	initHugoBuilderFlags(benchmarkCmd)
+	initBenchmarkBuildingFlags(benchmarkCmd)
+
+	benchmarkCmd.Flags().StringVar(&cpuProfileFile, "cpuprofile", "", "path/filename for the CPU profile file")
+	benchmarkCmd.Flags().StringVar(&memProfileFile, "memprofile", "", "path/filename for the memory profile file")
+	benchmarkCmd.Flags().IntVarP(&benchmarkTimes, "count", "n", 13, "number of times to build the site")
+
+	benchmarkCmd.RunE = benchmark
 }
 
-func bench(cmd *cobra.Command, args []string) {
-	f, err := os.Create(cpuProfilefile)
-
-	if err != nil {
-		panic(err)
+func benchmark(cmd *cobra.Command, args []string) error {
+	var err error
+	if err = InitializeConfig(benchmarkCmd); err != nil {
+		return err
 	}
 
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
+	var memProf *os.File
+	if memProfileFile != "" {
+		memProf, err = os.Create(memProfileFile)
+		if err != nil {
+			return err
+		}
+	}
 
+	var cpuProf *os.File
+	if cpuProfileFile != "" {
+		cpuProf, err = os.Create(cpuProfileFile)
+		if err != nil {
+			return err
+		}
+	}
+
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	memAllocated := memStats.TotalAlloc
+	mallocs := memStats.Mallocs
+	if cpuProf != nil {
+		pprof.StartCPUProfile(cpuProf)
+	}
+
+	t := time.Now()
 	for i := 0; i < benchmarkTimes; i++ {
-		_ = buildSite()
+		if err = resetAndbuildSites(false); err != nil {
+			return err
+		}
 	}
+	totalTime := time.Since(t)
+
+	if memProf != nil {
+		pprof.WriteHeapProfile(memProf)
+		memProf.Close()
+	}
+	if cpuProf != nil {
+		pprof.StopCPUProfile()
+		cpuProf.Close()
+	}
+
+	runtime.ReadMemStats(&memStats)
+	totalMemAllocated := memStats.TotalAlloc - memAllocated
+	totalMallocs := memStats.Mallocs - mallocs
+
+	jww.FEEDBACK.Println()
+	jww.FEEDBACK.Printf("Average time per operation: %vms\n", int(1000*totalTime.Seconds()/float64(benchmarkTimes)))
+	jww.FEEDBACK.Printf("Average memory allocated per operation: %vkB\n", totalMemAllocated/uint64(benchmarkTimes)/1024)
+	jww.FEEDBACK.Printf("Average allocations per operation: %v\n", totalMallocs/uint64(benchmarkTimes))
+
+	return nil
 }

@@ -2,12 +2,14 @@
 aliases:
     - /tutorials/github_pages_blog/
 author: Spencer Lyon
+lastmod: 2016-01-14
 date: 2014-03-21
 linktitle: Hosting on GitHub
+toc: true
 menu:
   main:
     parent: tutorials
-next: /tutorials/mathjax
+next: /tutorials/how-to-contribute-to-hugo/
 prev: /tutorials/creating-a-new-theme
 title: Hosting on GitHub Pages
 weight: 10
@@ -29,22 +31,22 @@ As our goal is to host a website using GitHub Pages, it is natural for us to hos
 
 ### Write a `config.yaml` File
 
-The very first step in creating a new Hugo site is to [write the config file](/overview/configuration). This config file is important for at least two reasons: (1) this is where site-wide settings (like the websites `baseurl`) go and (2) the config file dictates to some extent how Hugo will generate the website. For the example website I created a file `config.yaml` with the following contents
+The very first step in creating a new Hugo site is to [write the config file](/overview/configuration/). This config file is important for at least two reasons: (1) this is where site-wide settings (like the websites `baseURL`) go, and (2) the config file dictates to some extent how Hugo will generate the website. For the example website I created a file `config.yaml` with the following contents
 
     ---
-    contentdir: "content"
-    layoutdir: "layouts"
-    publishdir: "public"
+    contentDir: "content"
+    layoutDir: "layouts"
+    publishDir: "public"
     indexes:
       category: "categories"
-    baseurl: "http://spencerlyon2.github.io/hugo_gh_blog"
+    baseURL: "http://spencerlyon2.github.io/hugo_gh_blog"
     title: "Hugo Blog Template for GitHub Pages"
-    canonifyurls: true
+    canonifyURLs: true
     ...
 
-> **Caveat:** Hugo's former default of `canonifyurls: true` has been changed
+> **Caveat:** Hugo's former default of `canonifyURLs: true` has been changed
 > to `false` since this tutorial has written.  **Please make sure you manually
-> add `canonifyurls: true` to your `config.yaml`** if you are using Spencer's
+> add `canonifyURLs: true` to your `config.yaml`** if you are using Spencer's
 > https://github.com/spencerlyon2/hugo_gh_blog for this tutorial, or you *will*
 > run into problems such as the CSS files not loading.
 
@@ -53,7 +55,7 @@ The very first step in creating a new Hugo site is to [write the config file](/o
 
 ### Define Structure of Website
 
-Hugo assumes that you organize the content of your site in a meaningful way and uses the same structure to render the website. Notice that we have the line `contentdir: "content"` in our configuration file. This means that all the actual content of the website should be placed somewhere within a folder named `content`. Hugo treats all directories in `content` as sections. For our example we only need one section: a place to hold our blog posts. So we created two new folders:
+Hugo assumes that you organize the content of your site in a meaningful way and uses the same structure to render the website. Notice that we have the line `contentDir: "content"` in our configuration file. This means that all the actual content of the website should be placed somewhere within a folder named `content`. Hugo treats all directories in `content` as sections. For our example we only need one section: a place to hold our blog posts. So we created two new folders:
 
 ```
 ▾ <root>/
@@ -63,7 +65,7 @@ Hugo assumes that you organize the content of your site in a meaningful way and 
 
 ### Create HTML Templates
 
-The next step is to define the look and feel of your new website. Because Hugo will generate the site using HTML templates written by the user (you), this step is very subjective. I will merely present one possible theme that could be used to generate a blog. I decided to base the example project on a Jekyll theme called [Lanyon](http://lanyon.getpoole.com). The Lanyon theme is pure CSS and a slightly modified version of the CSS is in the `/static/css` directory of the example repository. If you are following along, you should grab the `static` folder from the example repository and put it alongside the `content` folder you just created.
+The next step is to define the look and feel of your new website. Because Hugo will generate the site using HTML templates written by the user (you), this step is very subjective. I will merely present one possible theme that could be used to generate a blog. I decided to base the example project on a Jekyll theme called [Lanyon](http://lanyon.getpoole.com/). The Lanyon theme is pure CSS and a slightly modified version of the CSS is in the `/static/css` directory of the example repository. If you are following along, you should grab the `static` folder from the example repository and put it alongside the `content` folder you just created.
 
 Because there are so many files needed to fully compose a complete website, I will not be able to go through each of them here. I will, however, show what the directory structure should look like when all is said and done:
 
@@ -95,13 +97,13 @@ Each of the files in the example repository is well commented with a description
 
 ### Add Some Content
 
-The final step in creating the blog is to add some actual blog posts. To do this, simply create one Markdown file (with extension `.md`) for each new blog post. At the top of each file you should include a metadata section that tells Hugo some things about the post (see [docs](/content/front-matter)). For example, consider the yaml metadata section from the top of the file `/content/posts/newest.md` from the example repository:
+The final step in creating the blog is to add some actual blog posts. To do this, simply create one Markdown file (with extension `.md`) for each new blog post. At the top of each file you should include a metadata section that tells Hugo some things about the post (see [docs](/content/front-matter/)). For example, consider the yaml metadata section from the top of the file `/content/posts/newest.md` from the example repository:
 
     ---
     title: "Just another sample post"
     date: "2014-03-29"
     description: "This should be a more useful description"
-    categories: 
+    categories:
         - "hugo"
         - "fun"
         - "test"
@@ -113,7 +115,7 @@ The keys set in this section are the mandatory `title` and `date` as well as the
 
 Once the site is set up and working properly, we need to push it to the correct branch of a GitHub repository so the website can be served through GitHub Pages. There are many ways to do this. Here I will show the workflow I currently use to manage my websites that are hosted through GitHub Pages.
 
-GitHub Pages will serve up a website for any repository that has a branch called `gh-pages` with a valid `index.html` file at that branch's root. A typical workflow might be to keep the content of a website on the `master` branch of a repository and the generated website on the `gh-pages` branch. This provides nice separation between input and output, but can be very tedious to work with. As a workaround, we will use the `git subtree` family of commands to have the `public` directory (or whatever `publishdir` is set to in your `config.yaml`) mirror the root of the `gh-pages` branch of the repository. This will allow us to do all our work on the `master` branch, run Hugo to have the site output into the `public` directory, and then push that directory directly to the correct place for GitHub Pages to serve our site.
+GitHub Pages will serve up a website for any repository that has a branch called `gh-pages` with a valid `index.html` file at that branch's root. A typical workflow might be to keep the content of a website on the `master` branch of a repository and the generated website on the `gh-pages` branch. This provides nice separation between input and output, but can be very tedious to work with. As a workaround, we will use the `git subtree` family of commands to have the `public` directory (or whatever `publishDir` is set to in your `config.yaml`) mirror the root of the `gh-pages` branch of the repository. This will allow us to do all our work on the `master` branch, run Hugo to have the site output into the `public` directory, and then push that directory directly to the correct place for GitHub Pages to serve our site.
 
 To get this properly set up, we will execute a series of commands at the terminal. I will include all of them in one place here for easy copy and paste, and will explain what each line does via comments. Note that this is to be run from the `<root>` directory (wherever the `content` and `layout` folders of your Hugo project live). Also note that you will need to change the commands that have the example repository GitHub address so that they point to your repo.
 
@@ -130,7 +132,7 @@ To get this properly set up, we will execute a series of commands at the termina
     git add .
     git commit -m "INIT: initial commit on gh-pages branch"
 
-    # Push to remote gh-pages branch 
+    # Push to remote gh-pages branch
     git push origin gh-pages
 
     # Return to master branch
@@ -158,24 +160,24 @@ To get this properly set up, we will execute a series of commands at the termina
     # Push the public subtree to the gh-pages branch
     git subtree push --prefix=public git@github.com:spencerlyon2/hugo_gh_blog.git gh-pages
 
-After executing these commands and waiting for the GitHub servers to update, the website we just created was live at [http://spencerlyon2.github.io/hugo_gh_blog](http://spencerlyon2.github.io/hugo_gh_blog). 
+After executing these commands and waiting for the GitHub servers to update, the website we just created was live at [http://spencerlyon2.github.io/hugo_gh_blog](http://spencerlyon2.github.io/hugo_gh_blog).
 
 ### `deploy.sh`
 
 Now, as you add new posts to your blog, you will follow steps that look something like the following:
- 
+
 * Create the Markdown source for the new post within the `content/posts` directory
-* Preview your work by running Hugo in server mode with `hugo server --watch`
+* Preview your work by running Hugo in server mode with `hugo server`
 * Run Hugo not in server mode so that the generated urls will be correct for the website
 * Add and commit the new post in `master` branch
 * Push the `master` branch
 * Push the public subtree to the remote `gh-pages` branch
 
-The first two items in the previous list are simply a way to conveniently preview your content as you write. This is a dynamic and fairly streamlined process. All the remaining items, however, are the same every time you want to add new content to the website. To make this repetitive process easier, I have adapted a script from the source repository for the [Chimer Arts & Maker Space](https://github.com/chimera/chimeraarts.org) website that is highlighted in the [Hugo Showcase](/showcase). The script lives in a file called `deploy.sh` and has the following contents:
+The first two items in the previous list are simply a way to conveniently preview your content as you write. This is a dynamic and fairly streamlined process. All the remaining items, however, are the same every time you want to add new content to the website. To make this repetitive process easier, I have adapted a script from the source repository for the [Chimer Arts & Maker Space](https://github.com/chimera/chimeraarts.org) website that is highlighted in the [Hugo Showcase](/showcase/). The script lives in a file called `deploy.sh` and has the following contents:
 
 **Note:**
 
-The first command `hugo` assumes you are running with all the default settings. 
+The first command `hugo` assumes you are running with all the default settings.
 
 To use a theme, make sure to specify it with `-t ThemeName` instead (or include the theme in the config file).
 
@@ -191,9 +193,9 @@ To build all draft posts *(If you only have drafts, no site will be generated)*
 
     echo -e "\033[0;32mDeploying updates to GitHub...\033[0m"
 
-    # Build the project. 
+    # Build the project.
     hugo
-    
+
     # Add changes to git.
     git add -A
 
@@ -219,7 +221,7 @@ There's another approach:
 2. Create an orphaned `gh-pages` branch. (See [here](https://help.github.com/articles/creating-project-pages-manually/) for more information.)
 3. Follow the instructions below.
 
-So, assuming you have your `gh-pages` set up, and `master` has a commit with some content you want to publish: 
+So, assuming you have your `gh-pages` set up, and `master` has a commit with some content you want to publish:
 
 ```
 # Fetch the deployment script into the root of your source tree, make it executable.
@@ -250,18 +252,18 @@ Step by step:
 
 1. Create on GitHub `<your-project>-hugo` repository (it will host Hugo's content)
 2. Create on GitHub `<username>.github.io` repository (it will host the `public` folder: the static website)
-2. `git clone <<your-project>-hugo-url> && cd <your-project>-hugo`
-3. Make your website work locally (`hugo serve --watch -t <yourtheme>`)
-4. Once you are happy with the results, <kbd>Ctrl</kbd>+<kbd>C</kbd> (kill server) and `rm -rf public` (don't worry, it can always be regenerated with `hugo -t <yourtheme>`)
-5. `git submodule add git@github.com:<username>/<username>.github.io.git public`
-6. Almost done: add a `deploy.sh` script to help you (and make it executable: `chmod +x deploy.sh`):
+3. `git clone <<your-project>-hugo-url> && cd <your-project>-hugo`
+4. Make your website work locally (`hugo server -t <yourtheme>`)
+5. Once you are happy with the results, <kbd>Ctrl</kbd>+<kbd>C</kbd> (kill server) and `rm -rf public` (don't worry, it can always be regenerated with `hugo -t <yourtheme>`)
+6. `git submodule add -b master git@github.com:<username>/<username>.github.io.git public`
+7. Almost done: add a `deploy.sh` script to help you (and make it executable: `chmod +x deploy.sh`):
 
 ```
 #!/bin/bash
 
 echo -e "\033[0;32mDeploying updates to GitHub...\033[0m"
 
-# Build the project. 
+# Build the project.
 hugo # if using a theme, replace by `hugo -t <yourtheme>`
 
 # Go To Public folder
@@ -284,8 +286,8 @@ cd ..
 ```
 7. `./deploy.sh "Your optional commit message"` to send changes to `<username>.github.io` (careful, you may also want to commit changes on the `<your-project>-hugo` repo).
 
-That's it! Your personal page is running at [http://username.github.io](http://username.github.io) (after up to 10 minutes delay).
+That's it! Your personal page is running at [http://username.github.io/](http://username.github.io/) (after up to 10 minutes delay).
 
 ## Conclusion
 
-Hopefully this tutorial helped you get your website off its feet and out into the open! If you have any further questions, feel free to contact the community through the [discussion forum](/community/mailing-list).
+Hopefully this tutorial helped you get your website off its feet and out into the open! If you have any further questions, feel free to contact the community through the [discussion forum](/community/mailing-list/).

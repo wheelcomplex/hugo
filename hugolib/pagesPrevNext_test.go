@@ -1,9 +1,9 @@
-// Copyright © 2014 Steve Francia <spf@spf13.com>.
+// Copyright 2015 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,21 +32,6 @@ var pagePNTestSources = []pagePNTestObject{
 	{"/section1/testpage3.md", 3, "2012-04-06"},
 	{"/section2/testpage4.md", 2, "2012-03-02"},
 	{"/section2/testpage5.md", 1, "2012-04-06"},
-}
-
-func preparePagePNTestPages(t *testing.T) Pages {
-	var pages Pages
-	for _, s := range pagePNTestSources {
-		p, err := NewPage(s.path)
-		if err != nil {
-			t.Fatalf("failed to prepare test page %s", s.path)
-		}
-		p.Weight = s.weight
-		p.Date = cast.ToTime(s.date)
-		p.PublishDate = cast.ToTime(s.date)
-		pages = append(pages, p)
-	}
-	return pages
 }
 
 func TestPrev(t *testing.T) {

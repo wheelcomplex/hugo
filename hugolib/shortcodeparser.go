@@ -1,9 +1,9 @@
-// Copyright © 2013-14 Steve Francia <spf@spf13.com>.
+// Copyright 2015 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -114,17 +114,6 @@ func (i item) String() string {
 
 type itemType int
 
-// named params in shortcodes
-type namedParam struct {
-	name  string
-	value string
-}
-
-// for testing
-func (np namedParam) String() string {
-	return fmt.Sprintf("%s=%s", np.name, np.value)
-}
-
 const (
 	tError itemType = iota
 	tEOF
@@ -164,7 +153,7 @@ type pagelexer struct {
 	currLeftDelimItem  itemType
 	currRightDelimItem itemType
 	currShortcodeName  string          // is only set when a shortcode is in opened state
-	closingState       int             // > 0 = on it's way to be closed
+	closingState       int             // > 0 = on its way to be closed
 	elementStepNum     int             // step number in element
 	paramElements      int             // number of elements (name + value = 2) found first
 	openShortcodes     map[string]bool // set of shortcodes in open state
@@ -325,7 +314,7 @@ func lexShortcodeLeftDelim(l *pagelexer) stateFunc {
 
 func lexShortcodeComment(l *pagelexer) stateFunc {
 	posRightComment := strings.Index(l.input[l.pos:], rightComment)
-	if posRightComment < 0 {
+	if posRightComment <= 1 {
 		return l.errorf("comment must be closed")
 	}
 	// we emit all as text, except the comment markers
@@ -345,6 +334,7 @@ func lexShortcodeComment(l *pagelexer) stateFunc {
 }
 
 func lexShortcodeRightDelim(l *pagelexer) stateFunc {
+	l.closingState = 0
 	l.pos += pos(len(l.currentRightShortcodeDelim()))
 	l.emit(l.currentRightShortcodeDelimItem())
 	return lexTextOutsideShortcodes
@@ -382,7 +372,7 @@ func lexShortcodeParam(l *pagelexer, escapedQuoteStart bool) stateFunc {
 			break
 		}
 
-		if !isValidParamRune(r) {
+		if !isAlphaNumericOrHyphen(r) {
 			l.backup()
 			break
 		}
@@ -477,7 +467,7 @@ func lexIdentifierInShortcode(l *pagelexer) stateFunc {
 Loop:
 	for {
 		switch r := l.next(); {
-		case isAlphaNumeric(r):
+		case isAlphaNumericOrHyphen(r):
 		default:
 			l.backup()
 			word := l.input[l.start:l.pos]
@@ -541,7 +531,7 @@ func lexInsideShortcode(l *pagelexer) stateFunc {
 		if l.peek() == '"' {
 			return lexShortcodeParam(l, true)
 		}
-	case l.elementStepNum > 0 && (isValidParamRune(r) || r == '"'): // positional params can have quotes
+	case l.elementStepNum > 0 && (isAlphaNumericOrHyphen(r) || r == '"'): // positional params can have quotes
 		l.backup()
 		return lexShortcodeParam(l, false)
 	case isAlphaNumeric(r):
@@ -584,7 +574,7 @@ func isSpace(r rune) bool {
 	return r == ' ' || r == '\t'
 }
 
-func isValidParamRune(r rune) bool {
+func isAlphaNumericOrHyphen(r rune) bool {
 	// let unquoted YouTube ids as positional params slip through (they contain hyphens)
 	return isAlphaNumeric(r) || r == '-'
 }

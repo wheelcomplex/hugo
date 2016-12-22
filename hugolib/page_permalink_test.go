@@ -1,3 +1,16 @@
+// Copyright 2015 The Hugo Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package hugolib
 
 import (
@@ -5,55 +18,61 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/hugo/helpers"
 	"github.com/spf13/hugo/source"
 	"github.com/spf13/viper"
 )
 
 func TestPermalink(t *testing.T) {
+	testCommonResetState()
+
 	tests := []struct {
 		file         string
-		dir          string
 		base         template.URL
 		slug         string
 		url          string
-		uglyUrls     bool
-		canonifyUrls bool
+		uglyURLs     bool
+		canonifyURLs bool
 		expectedAbs  string
 		expectedRel  string
 	}{
-		{"x/y/z/boofar.md", "x/y/z", "", "", "", false, false, "/x/y/z/boofar/", "/x/y/z/boofar/"},
-		{"x/y/z/boofar.md", "x/y/z/", "", "", "", false, false, "/x/y/z/boofar/", "/x/y/z/boofar/"},
-		{"x/y/z/boofar.md", "x/y/z/", "", "boofar", "", false, false, "/x/y/z/boofar/", "/x/y/z/boofar/"},
-		{"x/y/z/boofar.md", "x/y/z", "http://barnew/", "", "", false, false, "http://barnew/x/y/z/boofar/", "/x/y/z/boofar/"},
-		{"x/y/z/boofar.md", "x/y/z/", "http://barnew/", "boofar", "", false, false, "http://barnew/x/y/z/boofar/", "/x/y/z/boofar/"},
-		{"x/y/z/boofar.md", "x/y/z", "", "", "", true, false, "/x/y/z/boofar.html", "/x/y/z/boofar.html"},
-		{"x/y/z/boofar.md", "x/y/z/", "", "", "", true, false, "/x/y/z/boofar.html", "/x/y/z/boofar.html"},
-		{"x/y/z/boofar.md", "x/y/z/", "", "boofar", "", true, false, "/x/y/z/boofar.html", "/x/y/z/boofar.html"},
-		{"x/y/z/boofar.md", "x/y/z", "http://barnew/", "", "", true, false, "http://barnew/x/y/z/boofar.html", "/x/y/z/boofar.html"},
-		{"x/y/z/boofar.md", "x/y/z/", "http://barnew/", "boofar", "", true, false, "http://barnew/x/y/z/boofar.html", "/x/y/z/boofar.html"},
-		{"x/y/z/boofar.md", "x/y/z/", "http://barnew/boo/", "boofar", "", true, false, "http://barnew/boo/x/y/z/boofar.html", "/boo/x/y/z/boofar.html"},
-		{"x/y/z/boofar.md", "x/y/z/", "http://barnew/boo/", "boofar", "", true, true, "http://barnew/boo/x/y/z/boofar.html", "/x/y/z/boofar.html"},
-		{"x/y/z/boofar.md", "x/y/z/", "http://barnew/boo", "boofar", "", true, true, "http://barnew/boo/x/y/z/boofar.html", "/x/y/z/boofar.html"},
+		{"x/y/z/boofar.md", "", "", "", false, false, "/x/y/z/boofar/", "/x/y/z/boofar/"},
+		{"x/y/z/boofar.md", "", "", "", false, false, "/x/y/z/boofar/", "/x/y/z/boofar/"},
+		// Issue #1174
+		{"x/y/z/boofar.md", "http://gopher.com/", "", "", false, true, "http://gopher.com/x/y/z/boofar/", "/x/y/z/boofar/"},
+		{"x/y/z/boofar.md", "http://gopher.com/", "", "", true, true, "http://gopher.com/x/y/z/boofar.html", "/x/y/z/boofar.html"},
+		{"x/y/z/boofar.md", "", "boofar", "", false, false, "/x/y/z/boofar/", "/x/y/z/boofar/"},
+		{"x/y/z/boofar.md", "http://barnew/", "", "", false, false, "http://barnew/x/y/z/boofar/", "/x/y/z/boofar/"},
+		{"x/y/z/boofar.md", "http://barnew/", "boofar", "", false, false, "http://barnew/x/y/z/boofar/", "/x/y/z/boofar/"},
+		{"x/y/z/boofar.md", "", "", "", true, false, "/x/y/z/boofar.html", "/x/y/z/boofar.html"},
+		{"x/y/z/boofar.md", "", "", "", true, false, "/x/y/z/boofar.html", "/x/y/z/boofar.html"},
+		{"x/y/z/boofar.md", "", "boofar", "", true, false, "/x/y/z/boofar.html", "/x/y/z/boofar.html"},
+		{"x/y/z/boofar.md", "http://barnew/", "", "", true, false, "http://barnew/x/y/z/boofar.html", "/x/y/z/boofar.html"},
+		{"x/y/z/boofar.md", "http://barnew/", "boofar", "", true, false, "http://barnew/x/y/z/boofar.html", "/x/y/z/boofar.html"},
+		{"x/y/z/boofar.md", "http://barnew/boo/", "boofar", "", true, false, "http://barnew/boo/x/y/z/boofar.html", "/boo/x/y/z/boofar.html"},
+		{"x/y/z/boofar.md", "http://barnew/boo/", "boofar", "", false, true, "http://barnew/boo/x/y/z/boofar/", "/x/y/z/boofar/"},
+		{"x/y/z/boofar.md", "http://barnew/boo/", "boofar", "", false, false, "http://barnew/boo/x/y/z/boofar/", "/boo/x/y/z/boofar/"},
+		{"x/y/z/boofar.md", "http://barnew/boo/", "boofar", "", true, true, "http://barnew/boo/x/y/z/boofar.html", "/x/y/z/boofar.html"},
+		{"x/y/z/boofar.md", "http://barnew/boo", "boofar", "", true, true, "http://barnew/boo/x/y/z/boofar.html", "/x/y/z/boofar.html"},
 
-		// test url overrides
-		{"x/y/z/boofar.md", "x/y/z", "", "", "/z/y/q/", false, false, "/z/y/q/", "/z/y/q/"},
+		// test URL overrides
+		{"x/y/z/boofar.md", "", "", "/z/y/q/", false, false, "/z/y/q/", "/z/y/q/"},
 	}
 
-	viper.Set("DefaultExtension", "html")
-
+	viper.Set("defaultExtension", "html")
 	for i, test := range tests {
-		viper.Set("uglyurls", test.uglyUrls)
-		viper.Set("canonifyurls", test.canonifyUrls)
+		viper.Set("uglyURLs", test.uglyURLs)
+		viper.Set("canonifyURLs", test.canonifyURLs)
+		info := newSiteInfo(siteBuilderCfg{baseURL: string(test.base), language: helpers.NewDefaultLanguage()})
+
 		p := &Page{
-			Node: Node{
-				UrlPath: UrlPath{
-					Section: "z",
-					Url:     test.url,
-				},
-				Site: &SiteInfo{
-					BaseUrl: test.base,
-				},
+			pageInit: &pageInit{},
+			Kind:     KindPage,
+			URLPath: URLPath{
+				Section: "z",
+				URL:     test.url,
 			},
+			Site:   &info,
 			Source: Source{File: *source.NewFile(filepath.FromSlash(test.file))},
 		}
 
@@ -63,20 +82,14 @@ func TestPermalink(t *testing.T) {
 			})
 		}
 
-		u, err := p.Permalink()
-		if err != nil {
-			t.Errorf("Test %d: Unable to process permalink: %s", i, err)
-		}
+		u := p.Permalink()
 
 		expected := test.expectedAbs
 		if u != expected {
 			t.Errorf("Test %d: Expected abs url: %s, got: %s", i, expected, u)
 		}
 
-		u, err = p.RelPermalink()
-		if err != nil {
-			t.Errorf("Test %d: Unable to process permalink: %s", i, err)
-		}
+		u = p.RelPermalink()
 
 		expected = test.expectedRel
 		if u != expected {

@@ -1,9 +1,9 @@
-// Copyright © 2013 Steve Francia <spf@spf13.com>.
+// Copyright 2015 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,35 +14,39 @@
 package commands
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"bitbucket.org/kardianos/osext"
+	"github.com/kardianos/osext"
 	"github.com/spf13/cobra"
+	"github.com/spf13/hugo/helpers"
 	"github.com/spf13/hugo/hugolib"
+	jww "github.com/spf13/jwalterweatherman"
 )
 
-var timeLayout string // the layout for time.Time
-
-var version = &cobra.Command{
+var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number of Hugo",
-	Long:  `All software has versions. This is Hugo's`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if hugolib.BuildDate == "" {
-			setBuildDate() // set the build date from executable's mdate
-		} else {
-			formatBuildDate() // format the compile time
-		}
-		if hugolib.CommitHash == "" {
-			fmt.Printf("Hugo Static Site Generator v%s BuildDate: %s\n", hugolib.Version, hugolib.BuildDate)
-		} else {
-			fmt.Printf("Hugo Static Site Generator v%s-%s BuildDate: %s\n", hugolib.Version, strings.ToUpper(hugolib.CommitHash), hugolib.BuildDate)
-		}
+	Long:  `All software has versions. This is Hugo's.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		printHugoVersion()
+		return nil
 	},
+}
+
+func printHugoVersion() {
+	if hugolib.BuildDate == "" {
+		setBuildDate() // set the build date from executable's mdate
+	} else {
+		formatBuildDate() // format the compile time
+	}
+	if hugolib.CommitHash == "" {
+		jww.FEEDBACK.Printf("Hugo Static Site Generator v%s BuildDate: %s\n", helpers.HugoVersion(), hugolib.BuildDate)
+	} else {
+		jww.FEEDBACK.Printf("Hugo Static Site Generator v%s-%s BuildDate: %s\n", helpers.HugoVersion(), strings.ToUpper(hugolib.CommitHash), hugolib.BuildDate)
+	}
 }
 
 // setBuildDate checks the ModTime of the Hugo executable and returns it as a
@@ -55,12 +59,12 @@ func setBuildDate() {
 	fname, _ := osext.Executable()
 	dir, err := filepath.Abs(filepath.Dir(fname))
 	if err != nil {
-		fmt.Println(err)
+		jww.ERROR.Println(err)
 		return
 	}
-	fi, err := os.Lstat(filepath.Join(dir, "hugo"))
+	fi, err := os.Lstat(filepath.Join(dir, filepath.Base(fname)))
 	if err != nil {
-		fmt.Println(err)
+		jww.ERROR.Println(err)
 		return
 	}
 	t := fi.ModTime()

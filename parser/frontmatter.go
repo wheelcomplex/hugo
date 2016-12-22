@@ -1,9 +1,9 @@
-// Copyright © 2013 Steve Francia <spf@spf13.com>.
+// Copyright 2015 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,15 @@ package parser
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"strings"
 
-	"github.com/BurntSushi/toml"
+	toml "github.com/pelletier/go-toml"
+
 	"gopkg.in/yaml.v2"
 )
 
-type FrontmatterType struct {
+type frontmatterType struct {
 	markstart, markend []byte
 	Parse              func([]byte) (interface{}, error)
 	includeMark        bool
@@ -31,13 +32,13 @@ type FrontmatterType struct {
 
 func InterfaceToConfig(in interface{}, mark rune) ([]byte, error) {
 	if in == nil {
-		return []byte{}, fmt.Errorf("input was nil")
+		return []byte{}, errors.New("input was nil")
 	}
 
 	b := new(bytes.Buffer)
 
 	switch mark {
-	case rune(YAML_LEAD[0]):
+	case rune(YAMLLead[0]):
 		by, err := yaml.Marshal(in)
 		if err != nil {
 			return nil, err
@@ -48,13 +49,10 @@ func InterfaceToConfig(in interface{}, mark rune) ([]byte, error) {
 			return nil, err
 		}
 		return b.Bytes(), nil
-	case rune(TOML_LEAD[0]):
-		err := toml.NewEncoder(b).Encode(in)
-		if err != nil {
-			return nil, err
-		}
-		return b.Bytes(), nil
-	case rune(JSON_LEAD[0]):
+	case rune(TOMLLead[0]):
+		tree := toml.TreeFromMap(in.(map[string]interface{}))
+		return []byte(tree.String()), nil
+	case rune(JSONLead[0]):
 		by, err := json.MarshalIndent(in, "", "   ")
 		if err != nil {
 			return nil, err
@@ -66,20 +64,20 @@ func InterfaceToConfig(in interface{}, mark rune) ([]byte, error) {
 		}
 		return b.Bytes(), nil
 	default:
-		return nil, fmt.Errorf("Unsupported Format provided")
+		return nil, errors.New("Unsupported Format provided")
 	}
 }
 
 func InterfaceToFrontMatter(in interface{}, mark rune) ([]byte, error) {
 	if in == nil {
-		return []byte{}, fmt.Errorf("input was nil")
+		return []byte{}, errors.New("input was nil")
 	}
 
 	b := new(bytes.Buffer)
 
 	switch mark {
-	case rune(YAML_LEAD[0]):
-		_, err := b.Write([]byte(YAML_DELIM_UNIX))
+	case rune(YAMLLead[0]):
+		_, err := b.Write([]byte(YAMLDelimUnix))
 		if err != nil {
 			return nil, err
 		}
@@ -88,27 +86,25 @@ func InterfaceToFrontMatter(in interface{}, mark rune) ([]byte, error) {
 			return nil, err
 		}
 		b.Write(by)
-		_, err = b.Write([]byte(YAML_DELIM_UNIX))
+		_, err = b.Write([]byte(YAMLDelimUnix))
 		if err != nil {
 			return nil, err
 		}
 		return b.Bytes(), nil
-	case rune(TOML_LEAD[0]):
-		_, err := b.Write([]byte(TOML_DELIM_UNIX))
+	case rune(TOMLLead[0]):
+		_, err := b.Write([]byte(TOMLDelimUnix))
 		if err != nil {
 			return nil, err
 		}
 
-		err = toml.NewEncoder(b).Encode(in)
-		if err != nil {
-			return nil, err
-		}
-		_, err = b.Write([]byte("\n" + TOML_DELIM_UNIX))
+		tree := toml.TreeFromMap(in.(map[string]interface{}))
+		b.Write([]byte(tree.String()))
+		_, err = b.Write([]byte("\n" + TOMLDelimUnix))
 		if err != nil {
 			return nil, err
 		}
 		return b.Bytes(), nil
-	case rune(JSON_LEAD[0]):
+	case rune(JSONLead[0]):
 		by, err := json.MarshalIndent(in, "", "   ")
 		if err != nil {
 			return nil, err
@@ -120,23 +116,22 @@ func InterfaceToFrontMatter(in interface{}, mark rune) ([]byte, error) {
 		}
 		return b.Bytes(), nil
 	default:
-		return nil, fmt.Errorf("Unsupported Format provided")
+		return nil, errors.New("Unsupported Format provided")
 	}
 }
 
 func FormatToLeadRune(kind string) rune {
 	switch FormatSanitize(kind) {
 	case "yaml":
-		return rune([]byte(YAML_LEAD)[0])
-	case "toml":
-		return rune([]byte(TOML_LEAD)[0])
+		return rune([]byte(YAMLLead)[0])
 	case "json":
-		return rune([]byte(JSON_LEAD)[0])
+		return rune([]byte(JSONLead)[0])
 	default:
-		return rune([]byte(TOML_LEAD)[0])
+		return rune([]byte(TOMLLead)[0])
 	}
 }
 
+// TODO(bep) move to helpers
 func FormatSanitize(kind string) string {
 	switch strings.ToLower(kind) {
 	case "yaml", "yml":
@@ -150,44 +145,47 @@ func FormatSanitize(kind string) string {
 	}
 }
 
-func DetectFrontMatter(mark rune) (f *FrontmatterType) {
+// DetectFrontMatter detects the type of frontmatter analysing its first character.
+func DetectFrontMatter(mark rune) (f *frontmatterType) {
 	switch mark {
 	case '-':
-		return &FrontmatterType{[]byte(YAML_DELIM), []byte(YAML_DELIM), HandleYamlMetaData, false}
+		return &frontmatterType{[]byte(YAMLDelim), []byte(YAMLDelim), HandleYAMLMetaData, false}
 	case '+':
-		return &FrontmatterType{[]byte(TOML_DELIM), []byte(TOML_DELIM), HandleTomlMetaData, false}
+		return &frontmatterType{[]byte(TOMLDelim), []byte(TOMLDelim), HandleTOMLMetaData, false}
 	case '{':
-		return &FrontmatterType{[]byte{'{'}, []byte{'}'}, HandleJsonMetaData, true}
+		return &frontmatterType{[]byte{'{'}, []byte{'}'}, HandleJSONMetaData, true}
 	default:
 		return nil
 	}
 }
 
-func HandleTomlMetaData(datum []byte) (interface{}, error) {
+func HandleTOMLMetaData(datum []byte) (interface{}, error) {
 	m := map[string]interface{}{}
-	datum = removeTomlIdentifier(datum)
-	if _, err := toml.Decode(string(datum), &m); err != nil {
+	datum = removeTOMLIdentifier(datum)
+
+	tree, err := toml.Load(string(datum))
+
+	if err != nil {
 		return m, err
 	}
+
+	m = tree.ToMap()
+
 	return m, nil
 }
 
-func removeTomlIdentifier(datum []byte) []byte {
-	return bytes.Replace(datum, []byte(TOML_DELIM), []byte(""), -1)
+func removeTOMLIdentifier(datum []byte) []byte {
+	return bytes.Replace(datum, []byte(TOMLDelim), []byte(""), -1)
 }
 
-func HandleYamlMetaData(datum []byte) (interface{}, error) {
+func HandleYAMLMetaData(datum []byte) (interface{}, error) {
 	m := map[string]interface{}{}
-	if err := yaml.Unmarshal(datum, &m); err != nil {
-		return m, err
-	}
-	return m, nil
+	err := yaml.Unmarshal(datum, &m)
+	return m, err
 }
 
-func HandleJsonMetaData(datum []byte) (interface{}, error) {
+func HandleJSONMetaData(datum []byte) (interface{}, error) {
 	var f interface{}
-	if err := json.Unmarshal(datum, &f); err != nil {
-		return f, err
-	}
-	return f, nil
+	err := json.Unmarshal(datum, &f)
+	return f, err
 }

@@ -1,9 +1,9 @@
-// Copyright © 2013 Steve Francia <spf@spf13.com>.
+// Copyright 2015 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -27,52 +28,45 @@ import (
 	"github.com/spf13/viper"
 )
 
-var OutputDir string
-var Unsafe bool
+var outputDir string
+var unsafe bool
 
 var convertCmd = &cobra.Command{
 	Use:   "convert",
-	Short: "Convert will modify your content to different formats",
-	Long:  `Convert will modify your content to different formats`,
-	Run:   nil,
+	Short: "Convert your content to different formats",
+	Long: `Convert your content (e.g. front matter) to different formats.
+
+See convert's subcommands toJSON, toTOML and toYAML for more information.`,
+	RunE: nil,
 }
 
 var toJSONCmd = &cobra.Command{
 	Use:   "toJSON",
 	Short: "Convert front matter to JSON",
-	Long: `toJSON will convert all front matter in the content
-	directory to use JSON for the front matter`,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := convertContents(rune([]byte(parser.JSON_LEAD)[0]))
-		if err != nil {
-			jww.ERROR.Println(err)
-		}
+	Long: `toJSON converts all front matter in the content directory
+to use JSON for the front matter.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return convertContents(rune([]byte(parser.JSONLead)[0]))
 	},
 }
 
 var toTOMLCmd = &cobra.Command{
 	Use:   "toTOML",
 	Short: "Convert front matter to TOML",
-	Long: `toTOML will convert all front matter in the content
-	directory to use TOML for the front matter`,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := convertContents(rune([]byte(parser.TOML_LEAD)[0]))
-		if err != nil {
-			jww.ERROR.Println(err)
-		}
+	Long: `toTOML converts all front matter in the content directory
+to use TOML for the front matter.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return convertContents(rune([]byte(parser.TOMLLead)[0]))
 	},
 }
 
 var toYAMLCmd = &cobra.Command{
 	Use:   "toYAML",
 	Short: "Convert front matter to YAML",
-	Long: `toYAML will convert all front matter in the content
-	directory to use YAML for the front matter`,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := convertContents(rune([]byte(parser.YAML_LEAD)[0]))
-		if err != nil {
-			jww.ERROR.Println(err)
-		}
+	Long: `toYAML converts all front matter in the content directory
+to use YAML for the front matter.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return convertContents(rune([]byte(parser.YAMLLead)[0]))
 	},
 }
 
@@ -80,25 +74,37 @@ func init() {
 	convertCmd.AddCommand(toJSONCmd)
 	convertCmd.AddCommand(toTOMLCmd)
 	convertCmd.AddCommand(toYAMLCmd)
-	convertCmd.PersistentFlags().StringVarP(&OutputDir, "output", "o", "", "filesystem path to write files to")
-	convertCmd.PersistentFlags().BoolVar(&Unsafe, "unsafe", false, "enable less safe operations, please backup first")
+	convertCmd.PersistentFlags().StringVarP(&outputDir, "output", "o", "", "filesystem path to write files to")
+	convertCmd.PersistentFlags().StringVarP(&source, "source", "s", "", "filesystem path to read files relative from")
+	convertCmd.PersistentFlags().BoolVar(&unsafe, "unsafe", false, "enable less safe operations, please backup first")
+	convertCmd.PersistentFlags().SetAnnotation("source", cobra.BashCompSubdirsInDir, []string{})
 }
 
 func convertContents(mark rune) (err error) {
-	InitializeConfig()
-	site := &hugolib.Site{}
+	if err := InitializeConfig(); err != nil {
+		return err
+	}
 
-	if err := site.Initialise(); err != nil {
+	h, err := hugolib.NewHugoSitesFromConfiguration()
+
+	if err != nil {
+		return err
+	}
+
+	site := h.Sites[0]
+
+	if err = site.Initialise(); err != nil {
 		return err
 	}
 
 	if site.Source == nil {
-		panic(fmt.Sprintf("site.Source not set"))
+		panic("site.Source not set")
 	}
 	if len(site.Source.Files()) < 1 {
-		return fmt.Errorf("No source files found")
+		return errors.New("No source files found")
 	}
 
+	contentDir := helpers.AbsPathify(viper.GetString("contentDir"))
 	jww.FEEDBACK.Println("processing", len(site.Source.Files()), "content files")
 	for _, file := range site.Source.Files() {
 		jww.INFO.Println("Attempting to convert", file.LogicalName())
@@ -130,15 +136,22 @@ func convertContents(mark rune) (err error) {
 			metadata = newmetadata
 		}
 
-		page.SetDir(filepath.Join(helpers.AbsPathify(viper.GetString("ContentDir")), file.Dir()))
+		page.SetDir(filepath.Join(contentDir, file.Dir()))
 		page.SetSourceContent(psr.Content())
-		page.SetSourceMetaData(metadata, mark)
+		if err = page.SetSourceMetaData(metadata, mark); err != nil {
+			jww.ERROR.Printf("Failed to set source metadata for file %q: %s. For more info see For more info see https://github.com/spf13/hugo/issues/2458", page.FullFilePath(), err)
+			continue
+		}
 
-		if OutputDir != "" {
-			page.SaveSourceAs(filepath.Join(OutputDir, page.FullFilePath()))
+		if outputDir != "" {
+			if err = page.SaveSourceAs(filepath.Join(outputDir, page.FullFilePath())); err != nil {
+				return fmt.Errorf("Failed to save file %q: %s", page.FullFilePath(), err)
+			}
 		} else {
-			if Unsafe {
-				page.SaveSource()
+			if unsafe {
+				if err = page.SaveSource(); err != nil {
+					return fmt.Errorf("Failed to save file %q: %s", page.FullFilePath(), err)
+				}
 			} else {
 				jww.FEEDBACK.Println("Unsafe operation not allowed, use --unsafe or set a different output path")
 			}

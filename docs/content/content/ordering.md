@@ -1,4 +1,5 @@
 ---
+lastmod: 2015-12-23
 date: 2014-03-06
 linktitle: Ordering
 menu:
@@ -15,7 +16,7 @@ Hugo provides you with all the flexibility you need to organize how your content
 By default, content is ordered by weight, then by date with the most
 recent date first, but alternative sorting (by `title` and `linktitle`) is
 also available. The order the content would appear is specified in
-the [list template](/templates/list).
+the [list template](/templates/list/).
 
 _Both the `date` and `weight` fields are optional._
 
@@ -26,13 +27,14 @@ guaranteed.
 
 ## Assigning weight to content
 
-    +++
-    weight = 4
-    title = "Three"
-    date = "2012-04-06"
-    +++
-    Front Matter with Ordered Pages 3
-
+```toml
++++
+weight = 4
+title = "Three"
+date = "2012-04-06"
++++
+Front Matter with Ordered Pages 3
+```
 
 ## Ordering Content Within Taxonomies
 

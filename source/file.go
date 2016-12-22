@@ -1,9 +1,9 @@
-// Copyright © 2014 Steve Francia <spf@spf13.com>.
+// Copyright 2015 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,102 +14,136 @@
 package source
 
 import (
-	"github.com/spf13/hugo/helpers"
 	"io"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/hugo/helpers"
+	"github.com/spf13/viper"
 )
 
+// File represents a source content file.
+// All paths are relative from the source directory base
 type File struct {
-	relpath     string // Original Full Path eg. /Users/Home/Hugo/foo.txt
+	relpath     string // Original relative path, e.g. section/foo.txt
 	logicalName string // foo.txt
+	baseName    string // `post` for `post.md`, also `post.en` for `post.en.md`
 	Contents    io.Reader
 	section     string // The first directory
-	dir         string // The full directory Path (minus file name)
+	dir         string // The relative directory Path (minus file name)
 	ext         string // Just the ext (eg txt)
-	uniqueId    string // MD5 of the filename
+	uniqueID    string // MD5 of the filename
+
+	translationBaseName string // `post` for `post.es.md` (if `Multilingual` is enabled.)
+	lang                string // The language code if `Multilingual` is enabled
 }
 
-func (f *File) UniqueId() string {
-	if f.uniqueId == "" {
-		f.uniqueId = helpers.Md5String(f.LogicalName())
-	}
-	return f.uniqueId
+// UniqueID is the MD5 hash of the filename and is for most practical applications,
+// Hugo content files being one of them, considered to be unique.
+func (f *File) UniqueID() string {
+	return f.uniqueID
 }
 
+// String returns the file's content as a string.
 func (f *File) String() string {
 	return helpers.ReaderToString(f.Contents)
 }
 
+// Bytes returns the file's content as a byte slice.
 func (f *File) Bytes() []byte {
 	return helpers.ReaderToBytes(f.Contents)
 }
 
-// Filename without extension
+// BaseFileName is a filename without extension.
 func (f *File) BaseFileName() string {
-	return helpers.Filename(f.LogicalName())
+	return f.baseName
 }
 
+// TranslationBaseName is a filename with no extension,
+// not even the optional language extension part.
+func (f *File) TranslationBaseName() string {
+	return f.translationBaseName
+}
+
+// Lang for this page, if `Multilingual` is enabled on your site.
+func (f *File) Lang() string {
+	return f.lang
+}
+
+// Section is first directory below the content root.
 func (f *File) Section() string {
-	if f.section != "" {
-		return f.section
-	} else {
-		f.section = helpers.GuessSection(f.Dir())
-		return f.section
-	}
+	return f.section
 }
 
+// LogicalName is filename and extension of the file.
 func (f *File) LogicalName() string {
-	if f.logicalName != "" {
-		return f.logicalName
-	} else {
-		_, f.logicalName = filepath.Split(f.relpath)
-		return f.logicalName
-	}
+	return f.logicalName
 }
 
+// SetDir sets the relative directory where this file lives.
+// TODO(bep) Get rid of this.
 func (f *File) SetDir(dir string) {
 	f.dir = dir
 }
 
+// Dir gets the name of the directory that contains this file.
+// The directory is relative to the content root.
 func (f *File) Dir() string {
-	if f.dir != "" {
-		return f.dir
-	} else {
-		f.dir, _ = filepath.Split(f.relpath)
-		return f.dir
-	}
+	return f.dir
 }
 
+// Extension gets the file extension, i.e "myblogpost.md" will return "md".
 func (f *File) Extension() string {
-	if f.ext != "" {
-		return f.ext
-	} else {
-		f.ext = strings.TrimPrefix(filepath.Ext(f.LogicalName()), ".")
-		return f.ext
-	}
+	return f.ext
 }
 
+// Ext is an alias for Extension.
 func (f *File) Ext() string {
 	return f.Extension()
 }
 
+// Path gets the relative path including file name and extension.
+// The directory is relative to the content root.
 func (f *File) Path() string {
 	return f.relpath
 }
 
+// NewFileWithContents creates a new File pointer with the given relative path and
+// content. The language defaults to "en".
 func NewFileWithContents(relpath string, content io.Reader) *File {
 	file := NewFile(relpath)
 	file.Contents = content
+	file.lang = "en"
 	return file
 }
 
+// NewFile creates a new File pointer with the given relative path.
 func NewFile(relpath string) *File {
-	return &File{
+	f := &File{
 		relpath: relpath,
 	}
+
+	f.dir, f.logicalName = filepath.Split(f.relpath)
+	f.ext = strings.TrimPrefix(filepath.Ext(f.LogicalName()), ".")
+	f.baseName = helpers.Filename(f.LogicalName())
+
+	lang := strings.TrimPrefix(filepath.Ext(f.baseName), ".")
+	if _, ok := viper.GetStringMap("languages")[lang]; lang == "" || !ok {
+		f.lang = viper.GetString("defaultContentLanguage")
+		f.translationBaseName = f.baseName
+	} else {
+		f.lang = lang
+		f.translationBaseName = helpers.Filename(f.baseName)
+	}
+
+	f.section = helpers.GuessSection(f.Dir())
+	f.uniqueID = helpers.Md5String(f.LogicalName())
+
+	return f
 }
 
+// NewFileFromAbs creates a new File pointer with the given full file path path and
+// content.
 func NewFileFromAbs(base, fullpath string, content io.Reader) (f *File, err error) {
 	var name string
 	if name, err = helpers.GetRelativePath(fullpath, base); err != nil {

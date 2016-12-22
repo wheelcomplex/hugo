@@ -1,6 +1,7 @@
 ---
 aliases:
 - /layout/content/
+lastmod: 2015-05-22
 date: 2013-07-01
 linktitle: Single Content
 menu:
@@ -10,6 +11,7 @@ next: /templates/list
 prev: /templates/variables
 title: Single Content Template
 weight: 30
+toc: true
 ---
 
 The primary view of content in Hugo is the single view. Hugo, for every
@@ -23,21 +25,25 @@ rendering a specific page.
 Hugo will use the following prioritized list. If a file isn’t present,
 then the next one in the list will be used. This enables you to craft
 specific layouts when you want to without creating more templates
-than necessary. For most sites only the \_default file at the end of
+than necessary. For most sites, only the `_default` file at the end of
 the list will be needed.
 
-Users can specify the `type` and `layout` in the [front-matter](/content/front-matter). `Section`
-is determined based on the content file’s location. If `type` is provide,
+Users can specify the `type` and `layout` in the [front-matter](/content/front-matter/). `Section`
+is determined based on the content file’s location. If `type` is provided,
 it will be used instead of `section`.
 
-### Single
+### Single Page
 
-* /layouts/`TYPE`-or-`SECTION`/`LAYOUT`.html
-* /layouts/`TYPE`-or-`SECTION`/single.html
-* /layouts/\_default/single.html
-* /themes/`THEME`/layouts/`TYPE`-or-`SECTION`/`LAYOUT`.html
-* /themes/`THEME`/layouts/`TYPE`-or-`SECTION`/single.html
-* /themes/`THEME`/layouts/\_default/single.html
+* /layouts/`TYPE`/`LAYOUT`.html
+* /layouts/`SECTION`/`LAYOUT`.html
+* /layouts/`TYPE`/single.html
+* /layouts/`SECTION`/single.html
+* /layouts/_default/single.html
+* /themes/`THEME`/layouts/`TYPE`/`LAYOUT`.html
+* /themes/`THEME`/layouts/`SECTION`/`LAYOUT`.html
+* /themes/`THEME`/layouts/`TYPE`/single.html
+* /themes/`THEME`/layouts/`SECTION`/single.html
+* /themes/`THEME`/layouts/_default/single.html
 
 ## Example Single Template File
 
@@ -61,13 +67,13 @@ same as the other types, but the directory must be called "\_default".
           single.html
 
 
-## post/single.html
-This content template is used for [spf13.com](http://spf13.com).
-It makes use of [partial templates](/layout/partials)
+### post/single.html
+This content template is used for [spf13.com](http://spf13.com/).
+It makes use of [partial templates](/templates/partials/)
 
     {{ partial "header.html" . }}
     {{ partial "subheader.html" . }}
-    {{ $baseurl := .Site.BaseUrl }}
+    {{ $baseURL := .Site.BaseURL }}
 
     <section id="main">
       <h1 id="title">{{ .Title }}</h1>
@@ -86,12 +92,12 @@ It makes use of [partial templates](/layout/partials)
         </section>
         <ul id="categories">
           {{ range .Params.topics }}
-            <li><a href="{{ $baseurl }}/topics/{{ . | urlize }}">{{ . }}</a> </li>
+            <li><a href="{{ $baseURL }}/topics/{{ . | urlize }}">{{ . }}</a> </li>
           {{ end }}
         </ul>
         <ul id="tags">
           {{ range .Params.tags }}
-            <li> <a href="{{ $baseurl }}/tags/{{ . | urlize }}">{{ . }}</a> </li>
+            <li> <a href="{{ $baseURL }}/tags/{{ . | urlize }}">{{ . }}</a> </li>
           {{ end }}
         </ul>
         </div>
@@ -109,14 +115,14 @@ It makes use of [partial templates](/layout/partials)
     {{ partial "footer.html" . }}
 
 
-## project/single.html
-This content template is used for [spf13.com](http://spf13.com).
-It makes use of [partial templates](/layout/partials)
+### project/single.html
+This content template is used for [spf13.com](http://spf13.com/).
+It makes use of [partial templates](/templates/partials/)
 
 
     {{ partial "header.html" . }}
     {{ partial "subheader.html" . }}
-    {{ $baseurl := .Site.BaseUrl }}
+    {{ $baseURL := .Site.BaseURL }}
 
     <section id="main">
       <h1 id="title">{{ .Title }}</h1>
@@ -135,12 +141,12 @@ It makes use of [partial templates](/layout/partials)
         </section>
         <ul id="categories">
           {{ range .Params.topics }}
-          <li><a href="{{ $baseurl }}/topics/{{ . | urlize }}">{{ . }}</a> </li>
+          <li><a href="{{ $baseURL }}/topics/{{ . | urlize }}">{{ . }}</a> </li>
           {{ end }}
         </ul>
         <ul id="tags">
           {{ range .Params.tags }}
-            <li> <a href="{{ $baseurl }}/tags/{{ . | urlize }}">{{ . }}</a> </li>
+            <li> <a href="{{ $baseURL }}/tags/{{ . | urlize }}">{{ . }}</a> </li>
           {{ end }}
         </ul>
         </div>
@@ -152,10 +158,10 @@ It makes use of [partial templates](/layout/partials)
     </div>
     {{ end }}
 
-    {{ partial "footer.html" }}
+    {{ partial "footer.html" . }}
 
 Notice how the project/single.html template uses an additional parameter unique
 to this template. This doesn't need to be defined ahead of time. If the key is
 present in the front matter than it can be used in the template. To
 easily generate new content of this type with these keys ready use
-[content archetypes](/content/archetypes).
+[content archetypes](/content/archetypes/).

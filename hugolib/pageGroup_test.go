@@ -1,3 +1,16 @@
+// Copyright 2015 The Hugo Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package hugolib
 
 import (
@@ -34,6 +47,7 @@ func preparePageGroupTestPages(t *testing.T) Pages {
 		p.Weight = s.weight
 		p.Date = cast.ToTime(s.date)
 		p.PublishDate = cast.ToTime(s.date)
+		p.ExpiryDate = cast.ToTime(s.date)
 		p.Params["custom_param"] = s.param
 		p.Params["custom_date"] = cast.ToTime(s.date)
 		pages = append(pages, p)
@@ -126,16 +140,16 @@ func TestGroupByCalledWithUnavailableKey(t *testing.T) {
 	}
 }
 
-func (page *Page) dummyPageMethodWithArgForTest(s string) string {
+func (page *Page) DummyPageMethodWithArgForTest(s string) string {
 	return s
 }
 
-func (page *Page) dummyPageMethodReturnThreeValueForTest() (string, string, string) {
+func (page *Page) DummyPageMethodReturnThreeValueForTest() (string, string, string) {
 	return "foo", "bar", "baz"
 }
 
-func (page *Page) dummyPageMethodReturnErrorOnlyForTest() error {
-	return errors.New("something error occured")
+func (page *Page) DummyPageMethodReturnErrorOnlyForTest() error {
+	return errors.New("some error occurred")
 }
 
 func (page *Page) dummyPageMethodReturnTwoValueForTest() (string, string) {
@@ -146,22 +160,22 @@ func TestGroupByCalledWithInvalidMethod(t *testing.T) {
 	var err error
 	pages := preparePageGroupTestPages(t)
 
-	_, err = pages.GroupBy("dummyPageMethodWithArgForTest")
+	_, err = pages.GroupBy("DummyPageMethodWithArgForTest")
 	if err == nil {
 		t.Errorf("GroupByParam should return an error but didn't")
 	}
 
-	_, err = pages.GroupBy("dummyPageMethodReturnThreeValueForTest")
+	_, err = pages.GroupBy("DummyPageMethodReturnThreeValueForTest")
 	if err == nil {
 		t.Errorf("GroupByParam should return an error but didn't")
 	}
 
-	_, err = pages.GroupBy("dummyPageMethodReturnErrorOnlyForTest")
+	_, err = pages.GroupBy("DummyPageMethodReturnErrorOnlyForTest")
 	if err == nil {
 		t.Errorf("GroupByParam should return an error but didn't")
 	}
 
-	_, err = pages.GroupBy("dummyPageMethodReturnTwoValueForTest")
+	_, err = pages.GroupBy("DummyPageMethodReturnTwoValueForTest")
 	if err == nil {
 		t.Errorf("GroupByParam should return an error but didn't")
 	}
@@ -217,6 +231,25 @@ func TestGroupByParamInReverseOrder(t *testing.T) {
 	}
 	if !reflect.DeepEqual(groups, expect) {
 		t.Errorf("PagesGroup has unexpected groups. It should be %#v, got %#v", expect, groups)
+	}
+}
+
+func TestGroupByParamCalledWithCapitalLetterString(t *testing.T) {
+	testStr := "TestString"
+	f := "/section1/test_capital.md"
+	p, err := NewPage(filepath.FromSlash(f))
+	if err != nil {
+		t.Fatalf("failed to prepare test page %s", f)
+	}
+	p.Params["custom_param"] = testStr
+	pages := Pages{p}
+
+	groups, err := pages.GroupByParam("custom_param")
+	if err != nil {
+		t.Fatalf("Unable to make PagesGroup array: %s", err)
+	}
+	if groups[0].Key != testStr {
+		t.Errorf("PagesGroup key is converted to a lower character string. It should be %#v, got %#v", testStr, groups[0].Key)
 	}
 }
 
@@ -334,6 +367,23 @@ func TestGroupByPublishDateWithEmptyPages(t *testing.T) {
 	}
 	if groups != nil {
 		t.Errorf("PagesGroup isn't empty. It should be %#v, got %#v", nil, groups)
+	}
+}
+
+func TestGroupByExpiryDate(t *testing.T) {
+	pages := preparePageGroupTestPages(t)
+	expect := PagesGroup{
+		{Key: "2012-04", Pages: Pages{pages[4], pages[2], pages[0]}},
+		{Key: "2012-03", Pages: Pages{pages[3]}},
+		{Key: "2012-01", Pages: Pages{pages[1]}},
+	}
+
+	groups, err := pages.GroupByExpiryDate("2006-01")
+	if err != nil {
+		t.Fatalf("Unable to make PagesGroup array: %s", err)
+	}
+	if !reflect.DeepEqual(groups, expect) {
+		t.Errorf("PagesGroup has unexpected groups. It should be %#v, got %#v", expect, groups)
 	}
 }
 

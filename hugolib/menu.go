@@ -1,9 +1,9 @@
-// Copyright © 2013-14 Steve Francia <spf@spf13.com>.
+// Copyright 2015 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,8 +21,10 @@ import (
 	"github.com/spf13/cast"
 )
 
+// MenuEntry represents a menu item defined in either Page front matter
+// or in the site config.
 type MenuEntry struct {
-	Url        string
+	URL        string
 	Name       string
 	Menu       string
 	Identifier string
@@ -33,67 +35,79 @@ type MenuEntry struct {
 	Children   Menu
 }
 
+// Menu is a collection of menu entries.
 type Menu []*MenuEntry
+
+// Menus is a dictionary of menus.
 type Menus map[string]*Menu
+
+// PageMenus is a dictionary of menus defined in the Pages.
 type PageMenus map[string]*MenuEntry
 
-func (me *MenuEntry) AddChild(child *MenuEntry) {
-	me.Children = append(me.Children, child)
-	me.Children.Sort()
+// addChild adds a new child to this menu entry.
+// The default sort order will then be applied.
+func (m *MenuEntry) addChild(child *MenuEntry) {
+	m.Children = append(m.Children, child)
+	m.Children.Sort()
 }
 
-func (me *MenuEntry) HasChildren() bool {
-	return me.Children != nil
+// HasChildren returns whether this menu item has any children.
+func (m *MenuEntry) HasChildren() bool {
+	return m.Children != nil
 }
 
-func (me *MenuEntry) KeyName() string {
-	if me.Identifier != "" {
-		return me.Identifier
+// KeyName returns the key used to identify this menu entry.
+func (m *MenuEntry) KeyName() string {
+	if m.Identifier != "" {
+		return m.Identifier
 	}
-	return me.Name
+	return m.Name
 }
 
-func (me *MenuEntry) hopefullyUniqueId() string {
-	if me.Identifier != "" {
-		return me.Identifier
-	} else if me.Url != "" {
-		return me.Url
+func (m *MenuEntry) hopefullyUniqueID() string {
+	if m.Identifier != "" {
+		return m.Identifier
+	} else if m.URL != "" {
+		return m.URL
 	} else {
-		return me.Name
+		return m.Name
 	}
 }
 
-func (me *MenuEntry) IsEqual(inme *MenuEntry) bool {
-	return me.hopefullyUniqueId() == inme.hopefullyUniqueId() && me.Parent == inme.Parent
+// IsEqual returns whether the two menu entries represents the same menu entry.
+func (m *MenuEntry) IsEqual(inme *MenuEntry) bool {
+	return m.hopefullyUniqueID() == inme.hopefullyUniqueID() && m.Parent == inme.Parent
 }
 
-func (me *MenuEntry) IsSameResource(inme *MenuEntry) bool {
-	return me.Url != "" && inme.Url != "" && me.Url == inme.Url
+// IsSameResource returns whether the two menu entries points to the same
+// resource (URL).
+func (m *MenuEntry) IsSameResource(inme *MenuEntry) bool {
+	return m.URL != "" && inme.URL != "" && m.URL == inme.URL
 }
 
-func (me *MenuEntry) MarshallMap(ime map[string]interface{}) {
+func (m *MenuEntry) marshallMap(ime map[string]interface{}) {
 	for k, v := range ime {
 		loki := strings.ToLower(k)
 		switch loki {
 		case "url":
-			me.Url = cast.ToString(v)
+			m.URL = cast.ToString(v)
 		case "weight":
-			me.Weight = cast.ToInt(v)
+			m.Weight = cast.ToInt(v)
 		case "name":
-			me.Name = cast.ToString(v)
+			m.Name = cast.ToString(v)
 		case "pre":
-			me.Pre = template.HTML(cast.ToString(v))
+			m.Pre = template.HTML(cast.ToString(v))
 		case "post":
-			me.Post = template.HTML(cast.ToString(v))
+			m.Post = template.HTML(cast.ToString(v))
 		case "identifier":
-			me.Identifier = cast.ToString(v)
+			m.Identifier = cast.ToString(v)
 		case "parent":
-			me.Parent = cast.ToString(v)
+			m.Parent = cast.ToString(v)
 		}
 	}
 }
 
-func (m Menu) Add(me *MenuEntry) Menu {
+func (m Menu) add(me *MenuEntry) Menu {
 	app := func(slice Menu, x ...*MenuEntry) Menu {
 		n := len(slice) + len(x)
 		if n > cap(slice) {
@@ -120,62 +134,69 @@ func (m Menu) Add(me *MenuEntry) Menu {
  */
 
 // A type to implement the sort interface for Menu
-type MenuSorter struct {
+type menuSorter struct {
 	menu Menu
-	by   MenuEntryBy
+	by   menuEntryBy
 }
 
 // Closure used in the Sort.Less method.
-type MenuEntryBy func(m1, m2 *MenuEntry) bool
+type menuEntryBy func(m1, m2 *MenuEntry) bool
 
-func (by MenuEntryBy) Sort(menu Menu) {
-	ms := &MenuSorter{
+func (by menuEntryBy) Sort(menu Menu) {
+	ms := &menuSorter{
 		menu: menu,
 		by:   by, // The Sort method's receiver is the function (closure) that defines the sort order.
 	}
 	sort.Stable(ms)
 }
 
-var DefaultMenuEntrySort = func(m1, m2 *MenuEntry) bool {
+var defaultMenuEntrySort = func(m1, m2 *MenuEntry) bool {
 	if m1.Weight == m2.Weight {
+		if m1.Name == m2.Name {
+			return m1.Identifier < m2.Identifier
+		}
 		return m1.Name < m2.Name
-	} else {
-		return m1.Weight < m2.Weight
 	}
+	return m1.Weight < m2.Weight
 }
 
-func (ms *MenuSorter) Len() int      { return len(ms.menu) }
-func (ms *MenuSorter) Swap(i, j int) { ms.menu[i], ms.menu[j] = ms.menu[j], ms.menu[i] }
+func (ms *menuSorter) Len() int      { return len(ms.menu) }
+func (ms *menuSorter) Swap(i, j int) { ms.menu[i], ms.menu[j] = ms.menu[j], ms.menu[i] }
 
 // Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
-func (ms *MenuSorter) Less(i, j int) bool { return ms.by(ms.menu[i], ms.menu[j]) }
+func (ms *menuSorter) Less(i, j int) bool { return ms.by(ms.menu[i], ms.menu[j]) }
 
-func (p Menu) Sort() {
-	MenuEntryBy(DefaultMenuEntrySort).Sort(p)
+// Sort sorts the menu by weight, name and then by identifier.
+func (m Menu) Sort() Menu {
+	menuEntryBy(defaultMenuEntrySort).Sort(m)
+	return m
 }
 
-func (p Menu) Limit(n int) Menu {
-	if len(p) < n {
-		return p[0:n]
-	} else {
-		return p
+// Limit limits the returned menu to n entries.
+func (m Menu) Limit(n int) Menu {
+	if len(m) > n {
+		return m[0:n]
 	}
+	return m
 }
 
-func (p Menu) ByWeight() Menu {
-	MenuEntryBy(DefaultMenuEntrySort).Sort(p)
-	return p
+// ByWeight sorts the menu by the weight defined in the menu configuration.
+func (m Menu) ByWeight() Menu {
+	menuEntryBy(defaultMenuEntrySort).Sort(m)
+	return m
 }
 
-func (p Menu) ByName() Menu {
+// ByName sorts the menu by the name defined in the menu configuration.
+func (m Menu) ByName() Menu {
 	title := func(m1, m2 *MenuEntry) bool {
 		return m1.Name < m2.Name
 	}
 
-	MenuEntryBy(title).Sort(p)
-	return p
+	menuEntryBy(title).Sort(m)
+	return m
 }
 
+// Reverse reverses the order of the menu entries.
 func (m Menu) Reverse() Menu {
 	for i, j := 0, len(m)-1; i < j; i, j = i+1, j-1 {
 		m[i], m[j] = m[j], m[i]

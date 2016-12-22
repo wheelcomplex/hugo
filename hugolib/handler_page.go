@@ -1,9 +1,9 @@
-// Copyright © 2014 Steve Francia <spf@spf13.com>.
+// Copyright 2016 The Hugo Authors. All rights reserved.
 //
-// Licensed under the Simple Public License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://opensource.org/licenses/Simple-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,10 +14,13 @@
 package hugolib
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/spf13/hugo/helpers"
 	"github.com/spf13/hugo/source"
 	"github.com/spf13/hugo/tpl"
-	jww "github.com/spf13/jwalterweatherman"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -25,22 +28,23 @@ func init() {
 	RegisterHandler(new(htmlHandler))
 	RegisterHandler(new(asciidocHandler))
 	RegisterHandler(new(rstHandler))
+	RegisterHandler(new(mmarkHandler))
 }
 
 type basicPageHandler Handle
 
 func (b basicPageHandler) Read(f *source.File, s *Site) HandledResult {
 	page, err := NewPage(f.Path())
+
 	if err != nil {
 		return HandledResult{file: f, err: err}
 	}
 
-	if err := page.ReadFrom(f.Contents); err != nil {
+	if _, err := page.ReadFrom(f.Contents); err != nil {
 		return HandledResult{file: f, err: err}
 	}
 
 	page.Site = &s.Info
-	page.Tmpl = s.Tmpl
 
 	return HandledResult{file: f, page: page, err: err}
 }
@@ -55,25 +59,7 @@ type markdownHandler struct {
 
 func (h markdownHandler) Extensions() []string { return []string{"mdown", "markdown", "md"} }
 func (h markdownHandler) PageConvert(p *Page, t tpl.Template) HandledResult {
-	p.ProcessShortcodes(t)
-
-	tmpContent, tmpTableOfContents := helpers.ExtractTOC(p.renderContent(helpers.RemoveSummaryDivider(p.rawContent)))
-
-	if len(p.contentShortCodes) > 0 {
-		tmpContentWithTokensReplaced, err := replaceShortcodeTokens(tmpContent, shortcodePlaceholderPrefix, -1, true, p.contentShortCodes)
-
-		if err != nil {
-			jww.FATAL.Printf("Fail to replace short code tokens in %s:\n%s", p.BaseFileName(), err.Error())
-			return HandledResult{err: err}
-		} else {
-			tmpContent = tmpContentWithTokensReplaced
-		}
-	}
-
-	p.Content = helpers.BytesToHTML(tmpContent)
-	p.TableOfContents = helpers.BytesToHTML(tmpTableOfContents)
-
-	return HandledResult{err: nil}
+	return commonConvert(p, t)
 }
 
 type htmlHandler struct {
@@ -82,9 +68,15 @@ type htmlHandler struct {
 
 func (h htmlHandler) Extensions() []string { return []string{"html", "htm"} }
 func (h htmlHandler) PageConvert(p *Page, t tpl.Template) HandledResult {
-	// see #674 - disabled by bjornerik for now
-	// p.ProcessShortcodes(t)
-	p.Content = helpers.BytesToHTML(p.rawContent)
+	if p.rendered {
+		panic(fmt.Sprintf("Page %q already rendered, does not need conversion", p.BaseFileName()))
+	}
+
+	// Work on a copy of the raw content from now on.
+	p.createWorkContentCopy()
+
+	p.ProcessShortcodes(t)
+
 	return HandledResult{err: nil}
 }
 
@@ -92,14 +84,9 @@ type asciidocHandler struct {
 	basicPageHandler
 }
 
-func (h asciidocHandler) Extensions() []string { return []string{"asciidoc", "ad"} }
+func (h asciidocHandler) Extensions() []string { return []string{"asciidoc", "adoc", "ad"} }
 func (h asciidocHandler) PageConvert(p *Page, t tpl.Template) HandledResult {
-	p.ProcessShortcodes(t)
-
-	// TODO(spf13) Add Ascii Doc Logic here
-
-	//err := p.Convert()
-	return HandledResult{page: p, err: nil}
+	return commonConvert(p, t)
 }
 
 type rstHandler struct {
@@ -108,23 +95,39 @@ type rstHandler struct {
 
 func (h rstHandler) Extensions() []string { return []string{"rest", "rst"} }
 func (h rstHandler) PageConvert(p *Page, t tpl.Template) HandledResult {
-	p.ProcessShortcodes(t)
+	return commonConvert(p, t)
+}
 
-	tmpContent, tmpTableOfContents := helpers.ExtractTOC(p.renderContent(helpers.RemoveSummaryDivider(p.rawContent)))
+type mmarkHandler struct {
+	basicPageHandler
+}
 
-	if len(p.contentShortCodes) > 0 {
-		tmpContentWithTokensReplaced, err := replaceShortcodeTokens(tmpContent, shortcodePlaceholderPrefix, -1, true, p.contentShortCodes)
+func (h mmarkHandler) Extensions() []string { return []string{"mmark"} }
+func (h mmarkHandler) PageConvert(p *Page, t tpl.Template) HandledResult {
+	return commonConvert(p, t)
+}
 
-		if err != nil {
-			jww.FATAL.Printf("Fail to replace short code tokens in %s:\n%s", p.BaseFileName(), err.Error())
-			return HandledResult{err: err}
-		} else {
-			tmpContent = tmpContentWithTokensReplaced
-		}
+func commonConvert(p *Page, t tpl.Template) HandledResult {
+	if p.rendered {
+		panic(fmt.Sprintf("Page %q already rendered, does not need conversion", p.BaseFileName()))
 	}
 
-	p.Content = helpers.BytesToHTML(tmpContent)
-	p.TableOfContents = helpers.BytesToHTML(tmpTableOfContents)
+	// Work on a copy of the raw content from now on.
+	p.createWorkContentCopy()
+
+	p.ProcessShortcodes(t)
+
+	// TODO(bep) these page handlers need to be re-evaluated, as it is hard to
+	// process a page in isolation. See the new preRender func.
+	if viper.GetBool("enableEmoji") {
+		p.workContent = helpers.Emojify(p.workContent)
+	}
+
+	// We have to replace the <!--more--> with something that survives all the
+	// rendering engines.
+	// TODO(bep) inline replace
+	p.workContent = bytes.Replace(p.workContent, []byte(helpers.SummaryDivider), internalSummaryDivider, 1)
+	p.workContent = p.renderContent(p.workContent)
 
 	return HandledResult{err: nil}
 }

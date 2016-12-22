@@ -1,3 +1,16 @@
+// Copyright 2015 The Hugo Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package hugolib
 
 import (
@@ -59,33 +72,48 @@ var shortCodeLexerTests = []shortCodeLexerTest{
 		tstLeftNoMD, tstSC1, tstRightNoMD, tstLeftNoMD, tstSCClose, tstSC1,
 		{tError, 0, "unclosed shortcode"}}},
 	{"Youtube id", `{{< sc1 -ziL-Q_456igdO-4 >}}`, []item{
-		tstLeftNoMD, tstSC1, item{tScParam, 0, "-ziL-Q_456igdO-4"}, tstRightNoMD, tstEOF}},
+		tstLeftNoMD, tstSC1, {tScParam, 0, "-ziL-Q_456igdO-4"}, tstRightNoMD, tstEOF}},
 	{"non-alphanumerics param quoted", `{{< sc1 "-ziL-.%QigdO-4" >}}`, []item{
-		tstLeftNoMD, tstSC1, item{tScParam, 0, "-ziL-.%QigdO-4"}, tstRightNoMD, tstEOF}},
+		tstLeftNoMD, tstSC1, {tScParam, 0, "-ziL-.%QigdO-4"}, tstRightNoMD, tstEOF}},
 
 	{"two params", `{{< sc1 param1   param2 >}}`, []item{
 		tstLeftNoMD, tstSC1, tstParam1, tstParam2, tstRightNoMD, tstEOF}},
+	// issue #934
+	{"self-closing", `{{< sc1 />}}`, []item{
+		tstLeftNoMD, tstSC1, tstSCClose, tstRightNoMD, tstEOF}},
+	// Issue 2498
+	{"multiple self-closing", `{{< sc1 />}}{{< sc1 />}}`, []item{
+		tstLeftNoMD, tstSC1, tstSCClose, tstRightNoMD,
+		tstLeftNoMD, tstSC1, tstSCClose, tstRightNoMD, tstEOF}},
+	{"self-closing with param", `{{< sc1 param1 />}}`, []item{
+		tstLeftNoMD, tstSC1, tstParam1, tstSCClose, tstRightNoMD, tstEOF}},
+	{"multiple self-closing with param", `{{< sc1 param1 />}}{{< sc1 param1 />}}`, []item{
+		tstLeftNoMD, tstSC1, tstParam1, tstSCClose, tstRightNoMD,
+		tstLeftNoMD, tstSC1, tstParam1, tstSCClose, tstRightNoMD, tstEOF}},
+	{"multiple different self-closing with param", `{{< sc1 param1 />}}{{< sc2 param1 />}}`, []item{
+		tstLeftNoMD, tstSC1, tstParam1, tstSCClose, tstRightNoMD,
+		tstLeftNoMD, tstSC2, tstParam1, tstSCClose, tstRightNoMD, tstEOF}},
 	{"nested simple", `{{< sc1 >}}{{< sc2 >}}{{< /sc1 >}}`, []item{
 		tstLeftNoMD, tstSC1, tstRightNoMD,
 		tstLeftNoMD, tstSC2, tstRightNoMD,
 		tstLeftNoMD, tstSCClose, tstSC1, tstRightNoMD, tstEOF}},
 	{"nested complex", `{{< sc1 >}}ab{{% sc2 param1 %}}cd{{< sc3 >}}ef{{< /sc3 >}}gh{{% /sc2 %}}ij{{< /sc1 >}}kl`, []item{
 		tstLeftNoMD, tstSC1, tstRightNoMD,
-		item{tText, 0, "ab"},
+		{tText, 0, "ab"},
 		tstLeftMD, tstSC2, tstParam1, tstRightMD,
-		item{tText, 0, "cd"},
+		{tText, 0, "cd"},
 		tstLeftNoMD, tstSC3, tstRightNoMD,
-		item{tText, 0, "ef"},
+		{tText, 0, "ef"},
 		tstLeftNoMD, tstSCClose, tstSC3, tstRightNoMD,
-		item{tText, 0, "gh"},
+		{tText, 0, "gh"},
 		tstLeftMD, tstSCClose, tstSC2, tstRightMD,
-		item{tText, 0, "ij"},
+		{tText, 0, "ij"},
 		tstLeftNoMD, tstSCClose, tstSC1, tstRightNoMD,
-		item{tText, 0, "kl"}, tstEOF,
+		{tText, 0, "kl"}, tstEOF,
 	}},
 
 	{"two quoted params", `{{< sc1 "param nr. 1" "param nr. 2" >}}`, []item{
-		tstLeftNoMD, tstSC1, item{tScParam, 0, "param nr. 1"}, item{tScParam, 0, "param nr. 2"}, tstRightNoMD, tstEOF}},
+		tstLeftNoMD, tstSC1, {tScParam, 0, "param nr. 1"}, {tScParam, 0, "param nr. 2"}, tstRightNoMD, tstEOF}},
 	{"two named params", `{{< sc1 param1="Hello World" param2="p2Val">}}`, []item{
 		tstLeftNoMD, tstSC1, tstParam1, tstVal, tstParam2, {tScParamVal, 0, "p2Val"}, tstRightNoMD, tstEOF}},
 	{"escaped quotes", `{{< sc1 param1=\"Hello World\"  >}}`, []item{
@@ -94,13 +122,13 @@ var shortCodeLexerTests = []shortCodeLexerTest{
 		tstLeftNoMD, tstSC1, tstParam1, tstRightNoMD, tstEOF}},
 	{"escaped quotes inside escaped quotes", `{{< sc1 param1=\"Hello \"escaped\" World\"  >}}`, []item{
 		tstLeftNoMD, tstSC1, tstParam1,
-		item{tScParamVal, 0, `Hello `}, {tError, 0, `got positional parameter 'escaped'. Cannot mix named and positional parameters`}}},
+		{tScParamVal, 0, `Hello `}, {tError, 0, `got positional parameter 'escaped'. Cannot mix named and positional parameters`}}},
 	{"escaped quotes inside nonescaped quotes",
 		`{{< sc1 param1="Hello \"escaped\" World"  >}}`, []item{
-			tstLeftNoMD, tstSC1, tstParam1, item{tScParamVal, 0, `Hello "escaped" World`}, tstRightNoMD, tstEOF}},
+			tstLeftNoMD, tstSC1, tstParam1, {tScParamVal, 0, `Hello "escaped" World`}, tstRightNoMD, tstEOF}},
 	{"escaped quotes inside nonescaped quotes in positional param",
 		`{{< sc1 "Hello \"escaped\" World"  >}}`, []item{
-			tstLeftNoMD, tstSC1, item{tScParam, 0, `Hello "escaped" World`}, tstRightNoMD, tstEOF}},
+			tstLeftNoMD, tstSC1, {tScParam, 0, `Hello "escaped" World`}, tstRightNoMD, tstEOF}},
 	{"unterminated quote", `{{< sc1 param2="Hello World>}}`, []item{
 		tstLeftNoMD, tstSC1, tstParam2, {tError, 0, "unterminated quoted string in shortcode parameter-argument: 'Hello World>}}'"}}},
 	{"one named param, one not", `{{< sc1 param1="Hello World" p2 >}}`, []item{
@@ -116,19 +144,30 @@ var shortCodeLexerTests = []shortCodeLexerTest{
 		tstLeftNoMD, tstSC1, tstParam1,
 		{tError, 0, "got named parameter 'param2'. Cannot mix named and positional parameters"}}},
 	{"commented out", `{{</* sc1 */>}}`, []item{
-		item{tText, 0, "{{<"}, item{tText, 0, " sc1 "}, item{tText, 0, ">}}"}, tstEOF}},
+		{tText, 0, "{{<"}, {tText, 0, " sc1 "}, {tText, 0, ">}}"}, tstEOF}},
 	{"commented out, missing close", `{{</* sc1 >}}`, []item{
 		{tError, 0, "comment must be closed"}}},
 	{"commented out, misplaced close", `{{</* sc1 >}}*/`, []item{
-		item{tText, 0, "{{<"}, item{tText, 0, " sc1 >}}"}, {tError, 0, "comment ends before the right shortcode delimiter"}}},
+		{tText, 0, "{{<"}, {tText, 0, " sc1 >}}"}, {tError, 0, "comment ends before the right shortcode delimiter"}}},
 }
 
-func TestPagelexer(t *testing.T) {
-	for _, test := range shortCodeLexerTests {
-
+func TestShortcodeLexer(t *testing.T) {
+	for i, test := range shortCodeLexerTests {
 		items := collect(&test)
 		if !equal(items, test.items) {
-			t.Errorf("%s: got\n\t%v\nexpected\n\t%v", test.name, items, test.items)
+			t.Errorf("[%d] %s: got\n\t%v\nexpected\n\t%v", i, test.name, items, test.items)
+		}
+	}
+}
+
+func BenchmarkShortcodeLexer(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, test := range shortCodeLexerTests {
+			items := collect(&test)
+			if !equal(items, test.items) {
+				b.Errorf("%s: got\n\t%v\nexpected\n\t%v", test.name, items, test.items)
+			}
 		}
 	}
 }
